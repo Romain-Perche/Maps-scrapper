@@ -574,80 +574,42 @@ Propose un design soigné et distinctif, pas un template générique.`;
     });
   }
 
-  // ── Download photos ──────────────────────────────────────────────────────────
+  // ── Download photos as ZIP (browser native download) ────────────────────────
   async function downloadPhotos() {
     if (!currentPhotos.length) return;
 
     const btn    = document.getElementById('dl-btn');
     const label  = document.getElementById('dl-btn-label');
     const status = document.getElementById('dl-status');
-    const total  = currentPhotos.length;
-
-    // Open native OS folder picker (Chrome / Edge on all OS)
-    let dirHandle;
-    try {
-      dirHandle = await window.showDirectoryPicker({ mode: 'readwrite', startIn: 'downloads' });
-    } catch (err) {
-      if (err.name === 'AbortError') return; // user cancelled
-      return downloadPhotosServer();          // fallback Firefox / Safari
-    }
-
-    btn.disabled       = true;
-    status.className   = 'dl-status';
-    status.textContent = '';
-
-    let saved = 0;
-    try {
-      for (let i = 0; i < currentPhotos.length; i++) {
-        label.textContent = `${i + 1} / ${total}…`;
-        const res = await fetch(`/api/photo?name=${encodeURIComponent(currentPhotos[i])}&w=1200`);
-        if (!res.ok) continue;
-        const fileHandle = await dirHandle.getFileHandle(`photo-${i + 1}.jpg`, { create: true });
-        const writable   = await fileHandle.createWritable();
-        await writable.write(await res.blob());
-        await writable.close();
-        saved++;
-      }
-      photosFolder          = dirHandle.name;
-      photosCount           = saved;
-      status.className      = 'dl-status ok';
-      status.textContent    = `✓ ${saved} photos → ${dirHandle.name}/`;
-      label.textContent     = 'Télécharger à nouveau';
-      btn.style.borderColor = 'rgba(16,185,129,0.4)';
-      updatePrompt();
-    } catch (err) {
-      status.className   = 'dl-status err';
-      status.textContent = '✗ ' + err.message;
-      label.textContent  = 'Télécharger les photos';
-    } finally {
-      btn.disabled = false;
-    }
-  }
-
-  // Fallback serveur pour Firefox / Safari
-  async function downloadPhotosServer() {
-    const btn    = document.getElementById('dl-btn');
-    const label  = document.getElementById('dl-btn-label');
-    const status = document.getElementById('dl-status');
-    const total  = currentPhotos.length;
 
     btn.disabled      = true;
-    label.textContent = 'Téléchargement…';
+    label.textContent = 'Préparation…';
     status.className  = 'dl-status';
+    status.textContent = '';
 
     try {
-      const res  = await fetch('/api/download-photos', {
+      const nom = val('f-nom');
+      const res = await fetch('/api/download-zip', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ photos: currentPhotos, nom: val('f-nom') }),
+        body: JSON.stringify({ photos: currentPhotos, nom }),
       });
-      const data = await res.json();
-      if (!res.ok || data.error) throw new Error(data.error);
+      if (!res.ok) throw new Error(await res.text());
 
-      photosFolder          = data.folder;
-      photosCount           = data.count;
+      const blob = await res.blob();
+      const slug = (nom || 'photos')
+        .normalize('NFD').replace(/[̀-ͯ]/g, '')
+        .toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = `${slug}-photos.zip`;
+      a.click();
+      URL.revokeObjectURL(a.href);
+
+      photosFolder          = slug;
+      photosCount           = currentPhotos.length;
       status.className      = 'dl-status ok';
-      status.textContent    = `✓ ${data.count} photos → ${data.folder}/`;
+      status.textContent    = `✓ ZIP téléchargé (${currentPhotos.length} photos)`;
       label.textContent     = 'Télécharger à nouveau';
       btn.style.borderColor = 'rgba(16,185,129,0.4)';
       updatePrompt();
