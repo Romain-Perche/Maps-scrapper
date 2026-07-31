@@ -1,179 +1,53 @@
 #!/usr/bin/env node
-// server.js — UI locale pour générer des prompts de site vitrine depuis Google Maps
-// Usage : node server.js  (nécessite .env avec GOOGLE_MAPS_API_KEY)
+// server.js — UI locale pour générer des prompts de site vitrine
+// Sources : Google Maps (Places API) et/ou Instagram (scraper Apify)
+// Usage : node server.js  (nécessite .env — voir README)
 
 try { process.loadEnvFile(); } catch {}
 
 const http     = require('node:http');
 const fs       = require('node:fs');
-const fsp      = require('node:fs/promises');
 const path     = require('node:path');
 const { Readable } = require('node:stream');
 
-const API_KEY = process.env.GOOGLE_MAPS_API_KEY;
-const BASE    = 'https://places.googleapis.com/v1';
-const PORT    = process.env.PORT || 3000;
+const { buildZip }  = require('./lib/zip');
+const { slugify }   = require('./lib/slug');
+const { mergeRecords } = require('./lib/merge');
+const { resolvePhotoUrl, photoFilename } = require('./lib/photos');
 
-const DETAILS_FIELDS = [
-  'id', 'displayName', 'formattedAddress',
-  'internationalPhoneNumber', 'nationalPhoneNumber',
-  'regularOpeningHours',
-  'websiteUri', 'googleMapsUri', 'location',
-  'primaryTypeDisplayName', 'editorialSummary',
-  'photos', 'reviews',
-].join(',');
+const google    = require('./lib/providers/google');
+const instagram = require('./lib/providers/instagram');
+const PROVIDERS = [instagram, google];   // instagram teste en premier : plus spécifique
 
+const PORT = process.env.PORT || 3000;
 const HTML = fs.readFileSync(path.join(__dirname, 'index.html'), 'utf-8');
 
-async function queryFromShortLink(shortUrl) {
-  const res      = await fetch(shortUrl, { redirect: 'follow' });
-  const finalUrl = decodeURIComponent(res.url);
-  const nameMatch  = finalUrl.match(/\/place\/([^/@?]+)/);
-  const coordMatch = finalUrl.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/);
-  const name = nameMatch ? nameMatch[1].replace(/\+/g, ' ').trim() : '';
-  if (!name) throw new Error("Impossible d'extraire le nom depuis ce lien. Essaie une recherche textuelle : « Nom Ville ».");
-  return {
-    query: name,
-    coords: coordMatch ? { lat: parseFloat(coordMatch[1]), lng: parseFloat(coordMatch[2]) } : null,
-  };
+// Choisit la source : explicite si fournie, sinon déduite de l'entrée.
+// Le texte libre sans URL retombe sur Google (recherche « Nom Ville »).
+function pickProvider(input, explicit) {
+  if (explicit) {
+    const p = PROVIDERS.find(p => p.id === explicit);
+    if (!p) throw new Error(`Source inconnue : ${explicit}`);
+    return p;
+  }
+  return PROVIDERS.find(p => p.matches(input || '')) || google;
 }
 
-async function searchPlaceId(textQuery, coords) {
-  const body = { textQuery };
-  if (coords) {
-    body.locationBias = {
-      circle: { center: { latitude: coords.lat, longitude: coords.lng }, radius: 1000 },
-    };
-  }
-  const res = await fetch(`${BASE}/places:searchText`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'X-Goog-Api-Key': API_KEY,
-      'X-Goog-FieldMask': 'places.id,places.displayName,places.formattedAddress',
-    },
-    body: JSON.stringify(body),
+function readBody(req) {
+  return new Promise((resolve, reject) => {
+    let body = '';
+    req.on('data', chunk => {
+      body += chunk;
+      if (body.length > 1e6) { reject(new Error('Requête trop volumineuse.')); req.destroy(); }
+    });
+    req.on('end', () => resolve(body));
+    req.on('error', reject);
   });
-  const data = await res.json();
-  if (!res.ok) throw new Error(`Text Search : ${data.error?.message || res.status}`);
-  if (!data.places?.length) throw new Error(`Aucun lieu trouvé pour « ${textQuery} ».`);
-  return data.places[0].id;
 }
 
-async function getPlaceDetails(placeId) {
-  const res = await fetch(`${BASE}/places/${placeId}?languageCode=fr`, {
-    headers: {
-      'X-Goog-Api-Key': API_KEY,
-      'X-Goog-FieldMask': DETAILS_FIELDS,
-    },
-  });
-  const data = await res.json();
-  if (!res.ok) throw new Error(`Place Details : ${data.error?.message || res.status}`);
-  return data;
-}
-
-function shape(place) {
-  return {
-    place_id  : place.id,
-    nom       : place.displayName?.text || '',
-    type      : place.primaryTypeDisplayName?.text || '',
-    adresse   : place.formattedAddress || '',
-    telephone : place.internationalPhoneNumber || place.nationalPhoneNumber || '',
-    site_web  : place.websiteUri || '',
-    horaires  : place.regularOpeningHours?.weekdayDescriptions || [],
-    description: place.editorialSummary?.text || '',
-    coordonnees: place.location || null,
-    lien_maps : place.googleMapsUri || '',
-    photos    : (place.photos || []).slice(0, 10).map(p => p.name),
-    avis      : (place.reviews || [])
-      .filter(r => (r.rating || 0) >= 4)
-      .sort((a, b) => (b.rating || 0) - (a.rating || 0))
-      .slice(0, 3)
-      .map(r => ({
-      auteur: r.authorAttribution?.displayName || 'Anonyme',
-      note  : r.rating || 5,
-      texte : (r.text?.text || '').replace(/\n+/g, ' '),
-    })),
-  };
-}
-
-// Builds a ZIP buffer using the STORED method (no compression, ideal for JPEG).
-// files: Array<{ filename: string, data: Buffer }>
-function buildZip(files) {
-  const localHeaders = [];
-  const chunks = [];
-  let offset = 0;
-
-  for (const { filename, data } of files) {
-    const name   = Buffer.from(filename, 'utf8');
-    const crc    = crc32(data);
-    const size   = data.length;
-    const header = Buffer.alloc(30 + name.length);
-    header.writeUInt32LE(0x04034b50, 0);   // local file header signature
-    header.writeUInt16LE(20, 4);            // version needed
-    header.writeUInt16LE(0, 6);             // general purpose bit flag
-    header.writeUInt16LE(0, 8);             // compression method: STORED
-    header.writeUInt16LE(0, 10);            // last mod time
-    header.writeUInt16LE(0, 12);            // last mod date
-    header.writeUInt32LE(crc, 14);
-    header.writeUInt32LE(size, 18);
-    header.writeUInt32LE(size, 22);
-    header.writeUInt16LE(name.length, 26);
-    header.writeUInt16LE(0, 28);
-    name.copy(header, 30);
-
-    localHeaders.push({ name, crc, size, offset });
-    chunks.push(header, data);
-    offset += header.length + size;
-  }
-
-  // Central directory
-  const cdChunks = [];
-  let cdSize = 0;
-  for (const { name, crc, size, offset: lhOffset } of localHeaders) {
-    const cd = Buffer.alloc(46 + name.length);
-    cd.writeUInt32LE(0x02014b50, 0);   // central directory signature
-    cd.writeUInt16LE(20, 4);
-    cd.writeUInt16LE(20, 6);
-    cd.writeUInt16LE(0, 8);
-    cd.writeUInt16LE(0, 10);
-    cd.writeUInt16LE(0, 12);
-    cd.writeUInt16LE(0, 14);
-    cd.writeUInt32LE(crc, 16);
-    cd.writeUInt32LE(size, 20);
-    cd.writeUInt32LE(size, 24);
-    cd.writeUInt16LE(name.length, 28);
-    cd.writeUInt16LE(0, 30);
-    cd.writeUInt16LE(0, 32);
-    cd.writeUInt16LE(0, 34);
-    cd.writeUInt16LE(0, 36);
-    cd.writeUInt32LE(0, 38);
-    cd.writeUInt32LE(lhOffset, 42);
-    name.copy(cd, 46);
-    cdChunks.push(cd);
-    cdSize += cd.length;
-  }
-
-  const eocd = Buffer.alloc(22);
-  eocd.writeUInt32LE(0x06054b50, 0);
-  eocd.writeUInt16LE(0, 4);
-  eocd.writeUInt16LE(0, 6);
-  eocd.writeUInt16LE(files.length, 8);
-  eocd.writeUInt16LE(files.length, 10);
-  eocd.writeUInt32LE(cdSize, 12);
-  eocd.writeUInt32LE(offset, 16);
-  eocd.writeUInt16LE(0, 20);
-
-  return Buffer.concat([...chunks, ...cdChunks, eocd]);
-}
-
-function crc32(buf) {
-  let crc = 0xFFFFFFFF;
-  for (let i = 0; i < buf.length; i++) {
-    crc ^= buf[i];
-    for (let j = 0; j < 8; j++) crc = (crc >>> 1) ^ (crc & 1 ? 0xEDB88320 : 0);
-  }
-  return (crc ^ 0xFFFFFFFF) >>> 0;
+async function fetchPhoto(ref, width) {
+  const url = resolvePhotoUrl(ref, width);
+  return fetch(url, { redirect: 'follow', signal: AbortSignal.timeout(30_000) });
 }
 
 const server = http.createServer(async (req, res) => {
@@ -182,150 +56,94 @@ const server = http.createServer(async (req, res) => {
 
   if (req.method === 'OPTIONS') { res.writeHead(204); return res.end(); }
 
-  if (req.method === 'GET' && req.url === '/') {
+  const parsed = new URL(req.url, 'http://localhost');
+
+  if (req.method === 'GET' && parsed.pathname === '/') {
     res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
     return res.end(HTML);
   }
 
-  if (req.method === 'POST' && req.url === '/api/fetch-place') {
-    let body = '';
-    req.on('data', chunk => body += chunk);
-    req.on('end', async () => {
-      const send = (code, obj) => {
-        res.writeHead(code, { 'Content-Type': 'application/json; charset=utf-8' });
-        res.end(JSON.stringify(obj));
-      };
-      try {
-        const { url: inputUrl, query: inputQuery, id: inputId } = JSON.parse(body);
-        let placeId = inputId || null;
+  // ── Sources disponibles (l'UI grise celles sans clé) ─────────────────────
+  if (req.method === 'GET' && parsed.pathname === '/api/sources') {
+    res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
+    return res.end(JSON.stringify(
+      PROVIDERS.map(p => ({ id: p.id, label: p.label, configured: p.isConfigured() }))
+    ));
+  }
 
-        if (!placeId && inputUrl) {
-          const isShort = /maps\.app\.goo\.gl|goo\.gl\/maps/.test(inputUrl);
-          let query, coords;
-          if (isShort) {
-            ({ query, coords } = await queryFromShortLink(inputUrl));
-          } else {
-            const decoded = decodeURIComponent(inputUrl);
-            const nm = decoded.match(/\/place\/([^/@?]+)/);
-            const cm = decoded.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/);
-            if (!nm) throw new Error("URL Google Maps non reconnue. Essaie une recherche textuelle : « Nom Ville ».");
-            query  = nm[1].replace(/\+/g, ' ').trim();
-            coords = cm ? { lat: parseFloat(cm[1]), lng: parseFloat(cm[2]) } : null;
-          }
-          placeId = await searchPlaceId(query, coords);
-        } else if (!placeId && inputQuery) {
-          placeId = await searchPlaceId(inputQuery, null);
-        }
-
-        if (!placeId) throw new Error('Fournis une URL Google Maps, une requête textuelle ou un place_id.');
-        send(200, shape(await getPlaceDetails(placeId)));
-      } catch (err) {
-        send(400, { error: err.message });
-      }
-    });
+  // ── Récupération d'une fiche ─────────────────────────────────────────────
+  // POST /api/fetch-place  { url? , query? , id? , source? , merge_with? }
+  if (req.method === 'POST' && parsed.pathname === '/api/fetch-place') {
+    const send = (code, obj) => {
+      res.writeHead(code, { 'Content-Type': 'application/json; charset=utf-8' });
+      res.end(JSON.stringify(obj));
+    };
+    try {
+      const { url, query, id, source, merge_with } = JSON.parse(await readBody(req));
+      const provider = pickProvider(url || query || '', source);
+      let record = await provider.fetchRecord({ url, query, id });
+      if (merge_with) record = mergeRecords(merge_with, record);
+      send(200, record);
+    } catch (err) {
+      send(400, { error: err.message });
+    }
     return;
   }
 
   // ── Proxy photo ──────────────────────────────────────────────────────────
-  // GET /api/photo?name=places/…/photos/…&w=400
-  const parsed = new URL(req.url, 'http://localhost');
+  // GET /api/photo?ref=<places/… | https://…cdninstagram.com/…>&w=400
   if (req.method === 'GET' && parsed.pathname === '/api/photo') {
-    const name = parsed.searchParams.get('name') || '';
-    const w    = Math.min(1200, parseInt(parsed.searchParams.get('w') || '800', 10));
-    if (!name.startsWith('places/')) { res.writeHead(400); return res.end('Invalid name'); }
+    const ref = parsed.searchParams.get('ref') || parsed.searchParams.get('name') || '';
+    const w   = Math.min(1200, parseInt(parsed.searchParams.get('w') || '800', 10) || 800);
     try {
-      const pr = await fetch(`${BASE}/${name}/media?maxWidthPx=${w}&key=${API_KEY}`, { redirect: 'follow' });
+      const pr = await fetchPhoto(ref, w);
       if (!pr.ok) { res.writeHead(pr.status); return res.end(); }
       res.writeHead(200, {
-        'Content-Type': pr.headers.get('content-type') || 'image/jpeg',
+        'Content-Type' : pr.headers.get('content-type') || 'image/jpeg',
         'Cache-Control': 'public, max-age=86400',
       });
       Readable.fromWeb(pr.body).pipe(res);
-    } catch (err) { res.writeHead(500); res.end(err.message); }
+    } catch (err) {
+      res.writeHead(400); res.end(err.message);
+    }
     return;
   }
 
-  // ── Download photos as ZIP (browser download) ────────────────────────────
-  // POST /api/download-zip  body: { photos: [names], nom: string }
-  if (req.method === 'POST' && req.url === '/api/download-zip') {
-    let body = '';
-    req.on('data', chunk => body += chunk);
-    req.on('end', async () => {
-      try {
-        const { photos, nom } = JSON.parse(body);
-        if (!Array.isArray(photos) || !photos.length) {
-          res.writeHead(400); return res.end('Aucune photo.');
-        }
-
-        const slug = (nom || 'photos')
-          .normalize('NFD').replace(/[̀-ͯ]/g, '')
-          .toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
-
-        // Fetch all photos in parallel
-        const buffers = await Promise.all(photos.map(async (name, i) => {
-          if (!name.startsWith('places/')) return null;
-          try {
-            const pr = await fetch(`${BASE}/${name}/media?maxWidthPx=1200&key=${API_KEY}`, { redirect: 'follow' });
-            if (!pr.ok) return null;
-            return { filename: `photo-${i + 1}.jpg`, data: Buffer.from(await pr.arrayBuffer()) };
-          } catch { return null; }
-        }));
-        const files = buffers.filter(Boolean);
-
-        res.writeHead(200, {
-          'Content-Type': 'application/zip',
-          'Content-Disposition': `attachment; filename="${slug}-photos.zip"`,
-        });
-        res.end(buildZip(files));
-      } catch (err) {
-        if (!res.headersSent) { res.writeHead(500); res.end(err.message); }
+  // ── Téléchargement des photos en ZIP ─────────────────────────────────────
+  // POST /api/download-zip  { photos: [{source, ref}], nom }
+  if (req.method === 'POST' && parsed.pathname === '/api/download-zip') {
+    try {
+      const { photos, nom } = JSON.parse(await readBody(req));
+      if (!Array.isArray(photos) || !photos.length) {
+        res.writeHead(400); return res.end('Aucune photo.');
       }
-    });
-    return;
-  }
 
-  // ── Download photos to disk ───────────────────────────────────────────────
-  // POST /api/download-photos  body: { photos: [names], nom: string }
-  if (req.method === 'POST' && req.url === '/api/download-photos') {
-    let body = '';
-    req.on('data', chunk => body += chunk);
-    req.on('end', async () => {
-      const send = (code, obj) => {
-        res.writeHead(code, { 'Content-Type': 'application/json; charset=utf-8' });
-        res.end(JSON.stringify(obj));
-      };
-      try {
-        const { photos, nom, folder_path } = JSON.parse(body);
-        if (!Array.isArray(photos) || !photos.length) throw new Error('Aucune photo à télécharger.');
+      // Numérotation par source : maps-1, maps-2, insta-1…
+      const counters = {};
+      const named = photos.map((photo) => {
+        const source = photo?.source === 'instagram' ? 'instagram' : 'google';
+        counters[source] = (counters[source] || 0) + 1;
+        return { ref: photo?.ref, filename: photoFilename({ source }, counters[source] - 1) };
+      });
 
-        let folder;
-        if (folder_path && folder_path.trim()) {
-          folder = path.isAbsolute(folder_path.trim())
-            ? folder_path.trim()
-            : path.resolve(__dirname, folder_path.trim());
-        } else {
-          const slug = (nom || 'etablissement')
-            .normalize('NFD').replace(/[̀-ͯ]/g, '')
-            .toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
-          folder = path.join(__dirname, 'photos', slug);
-        }
-        await fsp.mkdir(folder, { recursive: true });
+      const buffers = await Promise.all(named.map(async ({ ref, filename }) => {
+        try {
+          const pr = await fetchPhoto(ref, 1200);
+          if (!pr.ok) return null;
+          return { filename, data: Buffer.from(await pr.arrayBuffer()) };
+        } catch { return null; }
+      }));
+      const files = buffers.filter(Boolean);
+      if (!files.length) { res.writeHead(502); return res.end('Aucune photo téléchargeable (liens expirés ?).'); }
 
-        let saved = 0;
-        await Promise.all(photos.map(async (name, i) => {
-          if (!name.startsWith('places/')) return;
-          const pr = await fetch(`${BASE}/${name}/media?maxWidthPx=1200&key=${API_KEY}`, { redirect: 'follow' });
-          if (!pr.ok) return;
-          const buf = Buffer.from(await pr.arrayBuffer());
-          await fsp.writeFile(path.join(folder, `photo-${i + 1}.jpg`), buf);
-          saved++;
-        }));
-
-        send(200, { folder, count: saved });
-      } catch (err) {
-        send(400, { error: err.message });
-      }
-    });
+      res.writeHead(200, {
+        'Content-Type'       : 'application/zip',
+        'Content-Disposition': `attachment; filename="${slugify(nom, 'photos')}-photos.zip"`,
+      });
+      res.end(buildZip(files));
+    } catch (err) {
+      if (!res.headersSent) { res.writeHead(500); res.end(err.message); }
+    }
     return;
   }
 
@@ -333,6 +151,8 @@ const server = http.createServer(async (req, res) => {
 });
 
 server.listen(PORT, () => {
-  if (!API_KEY) console.warn('⚠  GOOGLE_MAPS_API_KEY non définie dans .env — les appels API échoueront.');
+  for (const p of PROVIDERS) {
+    if (!p.isConfigured()) console.warn(`⚠  Source ${p.label} désactivée (clé absente du .env).`);
+  }
   console.log(`✓  Vitrine Gen disponible sur \x1b[36mhttp://localhost:${PORT}\x1b[0m`);
 });

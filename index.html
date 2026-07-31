@@ -77,6 +77,36 @@
     .search-row input:focus { border-color: var(--blue); }
     .search-row input::placeholder { color: var(--muted); }
     .hint { font-size: 12px; color: var(--muted); }
+    .hint code { font-size: 11px; }
+
+    /* ── Enrichissement seconde source ── */
+    .enrich { display: none; gap: 8px; align-items: center; }
+    .enrich.show { display: flex; }
+    .enrich input {
+      flex: 1;
+      height: 32px;
+      padding: 0 10px;
+      background: var(--bg);
+      border: 1px dashed var(--border);
+      border-radius: var(--r);
+      color: var(--text);
+      font-size: 13px;
+      outline: none;
+    }
+    .enrich input:focus { border-color: var(--blue); border-style: solid; }
+    .enrich input::placeholder { color: var(--muted); }
+
+    .src-pills { display: flex; gap: 6px; flex-wrap: wrap; }
+    .src-pill {
+      font-size: 11px;
+      font-weight: 500;
+      padding: 2px 9px;
+      border-radius: 20px;
+      background: var(--green-dim);
+      color: var(--green);
+    }
+    .src-pill.off { background: rgba(255,255,255,.05); color: var(--muted); }
+
     .status-msg {
       display: none;
       padding: 8px 12px;
@@ -230,6 +260,19 @@
       transition: opacity .25s;
     }
     .photo-thumb img.loaded { opacity: 1; }
+    .photo-thumb .src-tag {
+      position: absolute;
+      top: 3px; left: 3px;
+      z-index: 2;
+      font-size: 9px;
+      font-weight: 600;
+      letter-spacing: .04em;
+      padding: 1px 5px;
+      border-radius: 3px;
+      background: rgba(0,0,0,.62);
+      color: #fff;
+      pointer-events: none;
+    }
     .photo-thumb .skeleton {
       position: absolute;
       inset: 0;
@@ -334,20 +377,30 @@
   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
     <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>
   </svg>
-  <h1>Vitrine Gen <span>— site vitrine depuis Google Maps</span></h1>
+  <h1>Vitrine Gen <span>— site vitrine depuis Google Maps &amp; Instagram</span></h1>
 </header>
 
 <div class="search-bar">
   <div class="search-row">
     <input type="text" id="search-input"
-      placeholder="URL Google Maps ou « Nom de l'établissement Ville »"
+      placeholder="URL Google Maps, URL Instagram, ou « Nom de l'établissement Ville »"
       autocomplete="off" autocorrect="off" spellcheck="false">
     <button class="btn btn-primary" id="search-btn" onclick="fetchPlace()">
       <span class="spinner" id="spinner"></span>
       <span id="btn-label">Rechercher</span>
     </button>
   </div>
-  <p class="hint">Accepte : lien court <code>maps.app.goo.gl/…</code> · lien complet <code>google.com/maps/place/…</code> · recherche textuelle</p>
+  <p class="hint">Accepte : <code>maps.app.goo.gl/…</code> · <code>google.com/maps/place/…</code> · <code>instagram.com/compte</code> · recherche textuelle</p>
+
+  <div class="enrich" id="enrich-row">
+    <input type="text" id="enrich-input" autocomplete="off" spellcheck="false">
+    <button class="btn btn-ghost btn-sm" id="enrich-btn" onclick="enrichPlace()">
+      <span class="spinner" id="enrich-spinner"></span>
+      <span id="enrich-label">Enrichir</span>
+    </button>
+  </div>
+
+  <div class="src-pills" id="src-pills"></div>
   <div class="status-msg" id="status"></div>
 </div>
 
@@ -403,16 +456,52 @@
         <span class="dl-status" id="dl-status"></span>
       </div>
 
-      <p class="section-sep">Horaires & Avis</p>
+      <!-- ── Instagram (masqué sans source Instagram) ── -->
+      <div id="block-insta" style="display:none">
+        <p class="section-sep">Instagram</p>
 
-      <div class="field">
-        <label>Horaires d'ouverture <span class="badge badge-blue">API</span></label>
-        <textarea id="f-horaires" rows="7" oninput="updatePrompt()"></textarea>
+        <div class="field-row">
+          <div class="field">
+            <label>Compte</label>
+            <input type="text" id="f-ig-handle" readonly>
+          </div>
+          <div class="field">
+            <label>Abonnés / publications</label>
+            <input type="text" id="f-ig-followers" readonly>
+          </div>
+        </div>
+
+        <div class="field">
+          <label>Bio <span class="badge badge-blue">API</span></label>
+          <textarea id="f-ig-bio" rows="3" oninput="updatePrompt()"></textarea>
+        </div>
+
+        <div class="field">
+          <label>Publications récentes <span class="badge badge-blue">API</span></label>
+          <textarea id="f-ig-captions" rows="9"
+            placeholder="Extraits de légendes — c'est ce qui donne le ton de voix et les prestations réelles"
+            oninput="updatePrompt()"></textarea>
+        </div>
+
+        <div class="field">
+          <label>Thèmes récurrents</label>
+          <input type="text" id="f-ig-hashtags" placeholder="#brunch #faitmaison…" oninput="updatePrompt()">
+        </div>
       </div>
 
-      <div class="field">
-        <label>Avis clients représentatifs <span class="badge badge-blue">API</span></label>
-        <textarea id="f-avis" rows="7" placeholder="2-3 avis clients…" oninput="updatePrompt()"></textarea>
+      <!-- ── Horaires & avis (masqué sans source Google Maps) ── -->
+      <div id="block-maps" style="display:none">
+        <p class="section-sep">Horaires & Avis</p>
+
+        <div class="field">
+          <label>Horaires d'ouverture <span class="badge badge-blue">API</span></label>
+          <textarea id="f-horaires" rows="7" oninput="updatePrompt()"></textarea>
+        </div>
+
+        <div class="field">
+          <label>Avis clients représentatifs <span class="badge badge-blue">API</span></label>
+          <textarea id="f-avis" rows="7" placeholder="2-3 avis clients…" oninput="updatePrompt()"></textarea>
+        </div>
       </div>
 
       <p class="section-sep">Style</p>
@@ -424,7 +513,7 @@
           oninput="updatePrompt()">
       </div>
 
-      <div class="field">
+      <div class="field" id="field-maps-link" style="display:none">
         <label>Lien Google Maps</label>
         <input type="text" id="f-maps" readonly>
       </div>
@@ -457,12 +546,17 @@
 
 <script>
   // ── State ───────────────────────────────────────────────────────────────────
-  let currentPhotos = [];   // photo resource names from API
-  let photosFolder  = null; // set after download, e.g. "photos/le-havane"
+  let record        = null; // enregistrement courant renvoyé par l'API (fusion incluse)
+  let currentPhotos = [];   // [{ source, ref, alt }]
+  let photosFolder  = null; // set after download, e.g. "le-havane"
   let photosCount   = 0;
+  let photosNote    = '';   // ex. « insta-1…8 + maps-1…4 »
+  let sources       = [];   // ['google'] | ['instagram'] | les deux
+  let available     = [];   // sources configurées côté serveur
+  let lastInjected  = {};   // dernière valeur écrite par l'API, par champ
 
   // ── Prompt builder ──────────────────────────────────────────────────────────
-  function val(id) { return document.getElementById(id).value.trim(); }
+  function val(id) { const el = document.getElementById(id); return el ? el.value.trim() : ''; }
 
   function buildPrompt() {
     const nom      = val('f-nom');
@@ -473,6 +567,21 @@
     const avis     = val('f-avis');
     const site     = val('f-site');
     const ambiance = val('f-ambiance');
+
+    const igHandle    = val('f-ig-handle').replace(/^@/, '');
+    const igFollowers = val('f-ig-followers');
+    const igBio       = val('f-ig-bio');
+    const igCaptions  = val('f-ig-captions');
+    const igHashtags  = val('f-ig-hashtags');
+
+    // Provenance déduite des champs réellement remplis, pas seulement de `sources`,
+    // pour rester juste après une édition manuelle.
+    const hasIg     = Boolean(igHandle || igBio || igCaptions);
+    const hasGoogle = Boolean(horaires || avis || val('f-maps') || adresse) || sources.includes('google');
+
+    const origine = hasIg && hasGoogle ? 'issues de Google Maps et de son compte Instagram'
+                  : hasIg              ? 'issues de son compte Instagram'
+                  :                      'issues de Google Maps';
 
     const indent = str => str.split('\n').map(l => '  ' + l).join('\n');
 
@@ -485,7 +594,11 @@
       horaires && `Horaires d'ouverture :\n${indent(horaires)}`,
       avis     && `Avis clients représentatifs :\n${indent(avis)}`,
       site     && `Site / réseaux sociaux existants : ${site}`,
-      photosFolder && `Photos fournies : ${photosCount} photos dans le dossier « ${photosFolder}/ » (à joindre avec ce prompt)`,
+      igHandle && `Compte Instagram : @${igHandle}${igFollowers ? ` (${igFollowers})` : ''}`,
+      igBio    && `Bio Instagram :\n${indent(igBio)}`,
+      igCaptions && `Publications récentes — extraits, pour capter le ton de voix et les prestations réelles :\n${indent(igCaptions)}`,
+      igHashtags && `Thèmes récurrents : ${igHashtags}`,
+      photosFolder && `Photos fournies : ${photosCount} photos dans le dossier « ${photosFolder}/ » (à joindre avec ce prompt)${photosNote}`,
       ambiance && `Ambiance / style souhaité : ${ambiance}`,
     ].filter(Boolean).join('\n');
 
@@ -493,30 +606,55 @@
       ? `- Galerie photos : utiliser les images du dossier ${photosFolder}/ (balises <img> avec chemins relatifs)`
       : '- Galerie photos (placeholders avec ratios corrects)';
 
+    // Sans adresse (Instagram seul), une iframe Maps produirait une carte vide.
+    const contactSection = adresse
+      ? '- Horaires + carte Google Maps intégrée (iframe) + coordonnées cliquables (tel:, mailto:)'
+      : hasIg
+        ? "- Bloc contact : coordonnées cliquables (tel:, mailto:) et lien direct vers la messagerie Instagram — aucune adresse physique connue, ne pas inventer de carte"
+        : '- Bloc contact avec coordonnées cliquables (tel:, mailto:)';
+
+    const sectionLines = [
+      '- En-tête avec nom, logo (placeholder) et menu de navigation',
+      "- Hero accrocheur avec une phrase d'accroche et un bouton d'action (réserver / contacter / appeler)",
+      "- Présentation de l'établissement",
+      '- Section services/prestations (ou carte/menu pour un restaurant, formules pour un centre équestre)',
+      galerieSection,
+      avis && '- Avis clients mis en valeur',
+      hasIg && `- Section Instagram : mise en avant du compte @${igHandle}, bouton « Suivre » et aperçu des publications`,
+      contactSection,
+      '- Pied de page avec liens, mentions et réseaux sociaux',
+    ].filter(Boolean).join('\n');
+
+    // Sans adresse, LocalBusiness n'a pas de sens : on bascule sur Organization.
+    const schema = adresse
+      ? 'Schema.org LocalBusiness / Restaurant, renseignées avec les infos ci-dessus'
+      : `Schema.org Organization (pas d'adresse physique connue, donc pas de LocalBusiness)${hasIg ? `, avec sameAs vers https://www.instagram.com/${igHandle}/` : ''}`;
+
+    const constraintLines = [
+      '- 100 % responsive (mobile-first)',
+      `- Bon référencement de base : balises meta, titre, données structurées ${schema}`,
+      '- Accessibilité : contrastes corrects, balises sémantiques, alt sur les images',
+      "- Palette de couleurs et typographie cohérentes avec l'ambiance demandée",
+      hasIg && photosFolder && "- Identité visuelle : s'inspirer des couleurs, matières et atmosphère dominantes des photos Instagram fournies — ce sont elles qui portent la charte de la marque",
+      hasIg && !photosFolder && "- Identité visuelle : s'inspirer du ton et de l'univers qui ressortent des publications Instagram ci-dessus",
+      adresse
+        ? '- Bouton « Appeler » et « Itinéraire » fonctionnels sur mobile'
+        : '- Bouton « Appeler » et lien Instagram fonctionnels sur mobile',
+      '- Code commenté pour que je puisse modifier facilement',
+    ].filter(Boolean).join('\n');
+
     return `Tu es développeur web et designer. Crée un site vitrine complet, moderne et responsive pour l'établissement suivant. Le site doit être un fichier HTML autonome (HTML + CSS + JS dans un seul fichier), sans framework lourd, prêt à être hébergé.
-Informations sur l'établissement (issues de Google Maps) :
+Informations sur l'établissement (${origine}) :
 
 ${infoLines}
 
 Sections attendues :
 
-- En-tête avec nom, logo (placeholder) et menu de navigation
-- Hero accrocheur avec une phrase d'accroche et un bouton d'action (réserver / contacter / appeler)
-- Présentation de l'établissement
-- Section services/prestations (ou carte/menu pour un restaurant, formules pour un centre équestre)
-${galerieSection}
-- Avis clients mis en valeur
-- Horaires + carte Google Maps intégrée (iframe) + coordonnées cliquables (tel:, mailto:)
-- Pied de page avec liens, mentions et réseaux sociaux
+${sectionLines}
 
 Contraintes techniques :
 
-- 100 % responsive (mobile-first)
-- Bon référencement de base : balises meta, titre, données structurées Schema.org (LocalBusiness / Restaurant) avec les infos ci-dessus
-- Accessibilité : contrastes corrects, balises sémantiques, alt sur les images
-- Palette de couleurs et typographie cohérentes avec l'ambiance demandée
-- Bouton « Appeler » et « Itinéraire » fonctionnels sur mobile
-- Code commenté pour que je puisse modifier facilement
+${constraintLines}
 
 Propose un design soigné et distinctif, pas un template générique.`;
   }
@@ -533,6 +671,7 @@ Propose un design soigné et distinctif, pas un template générique.`;
     currentPhotos = photos;
     photosFolder  = null;
     photosCount   = 0;
+    photosNote    = '';
 
     const grid     = document.getElementById('photo-grid');
     const bar      = document.getElementById('photo-bar');
@@ -553,7 +692,12 @@ Propose un design soigné et distinctif, pas un template générique.`;
     none.style.display = 'none';
     bar.style.display  = 'flex';
 
-    photos.forEach((name, i) => {
+    // Badge de source uniquement quand les deux sources coexistent.
+    const mixed = new Set(photos.map(p => p.source)).size > 1;
+
+    photos.forEach((photo, i) => {
+      const url = w => `/api/photo?ref=${encodeURIComponent(photo.ref)}&w=${w}`;
+
       const wrap = document.createElement('div');
       wrap.className = 'photo-thumb';
 
@@ -561,15 +705,23 @@ Propose un design soigné et distinctif, pas un template générique.`;
       skel.className = 'skeleton';
 
       const img = document.createElement('img');
-      img.alt   = `Photo ${i + 1}`;
-      img.src   = `/api/photo?name=${encodeURIComponent(name)}&w=400`;
+      img.alt   = photo.alt || `Photo ${i + 1}`;
+      img.src   = url(400);
       img.loading = 'lazy';
       img.onload  = () => { img.classList.add('loaded'); skel.remove(); };
       img.onerror = () => { skel.remove(); wrap.style.opacity = '.3'; };
-      img.onclick = () => openLightbox(`/api/photo?name=${encodeURIComponent(name)}&w=1200`);
+      img.onclick = () => openLightbox(url(1200));
 
       wrap.appendChild(skel);
       wrap.appendChild(img);
+
+      if (mixed) {
+        const tag = document.createElement('span');
+        tag.className   = 'src-tag';
+        tag.textContent = photo.source === 'instagram' ? 'IG' : 'Maps';
+        wrap.appendChild(tag);
+      }
+
       grid.appendChild(wrap);
     });
   }
@@ -597,14 +749,20 @@ Propose un design soigné et distinctif, pas un template générique.`;
       if (!res.ok) throw new Error(await res.text());
 
       const blob = await res.blob();
-      const slug = (nom || 'photos')
-        .normalize('NFD').replace(/[̀-ͯ]/g, '')
-        .toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+      const slug = slugify(nom, 'photos');
       const a = document.createElement('a');
       a.href = URL.createObjectURL(blob);
       a.download = `${slug}-photos.zip`;
       a.click();
       URL.revokeObjectURL(a.href);
+
+      // Les fichiers du ZIP sont préfixés par source : on le dit dans le prompt
+      // pour que Claude sache lesquelles portent la charte de la marque.
+      const nbIg   = currentPhotos.filter(p => p.source === 'instagram').length;
+      const nbMaps = currentPhotos.length - nbIg;
+      photosNote = nbIg && nbMaps
+        ? ` — fichiers insta-1…${nbIg} (photos du compte Instagram, porteuses de l'identité visuelle) et maps-1…${nbMaps} (photos Google Maps)`
+        : '';
 
       photosFolder          = slug;
       photosCount           = currentPhotos.length;
@@ -636,62 +794,203 @@ Propose un design soigné et distinctif, pas un template générique.`;
   document.addEventListener('keydown', e => { if (e.key === 'Escape') closeLightbox(); });
 
   // ── Populate all fields ──────────────────────────────────────────────────────
+  // N'écrase jamais un champ que l'utilisateur a édité à la main : on compare
+  // avec la dernière valeur injectée par l'API.
+  function setField(id, value) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    const edited = el.value !== '' && el.value !== (lastInjected[id] ?? '');
+    if (edited) return;                    // édition manuelle : on la respecte
+    el.value = value;
+    lastInjected[id] = value;
+  }
+
+  function formatFollowers(ig) {
+    const parts = [];
+    if (ig.followers)   parts.push(`${ig.followers.toLocaleString('fr')} abonnés`);
+    if (ig.posts_count) parts.push(`${ig.posts_count.toLocaleString('fr')} publications`);
+    if (ig.verifie)     parts.push('compte certifié');
+    return parts.join(' · ');
+  }
+
   function populateFields(data) {
+    record  = data;
+    sources = data.sources || [];
+
     document.getElementById('empty-state').style.display  = 'none';
     document.getElementById('form-content').style.display = 'block';
 
-    document.getElementById('f-nom').value     = data.nom || '';
-    document.getElementById('f-type').value    = data.type || '';
-    document.getElementById('f-adresse').value = data.adresse || '';
-    document.getElementById('f-tel').value     = data.telephone || '';
-    document.getElementById('f-site').value    = data.site_web || '';
-    document.getElementById('f-maps').value    = data.lien_maps || '';
+    setField('f-nom',     data.nom || '');
+    setField('f-type',    data.type || '');
+    setField('f-adresse', data.adresse || '');
+    setField('f-tel',     data.telephone || '');
+    setField('f-site',    data.site_web || '');
+    setField('f-maps',    data.lien_maps || '');
 
-    document.getElementById('f-horaires').value = (data.horaires || []).join('\n');
+    setField('f-horaires', (data.horaires || []).join('\n'));
 
-    document.getElementById('f-avis').value = (data.avis || []).map(a => {
+    setField('f-avis', (data.avis || []).map(a => {
       const stars = '⭐'.repeat(Math.max(1, Math.round(a.note || 5)));
       return `${stars} ${a.auteur}\n"${a.texte}"`;
-    }).join('\n\n');
+    }).join('\n\n'));
+
+    const ig = data.instagram;
+    if (ig) {
+      setField('f-ig-handle',    ig.handle ? '@' + ig.handle : '');
+      setField('f-ig-followers', formatFollowers(ig));
+      setField('f-ig-bio',       ig.bio || '');
+      setField('f-ig-captions', (ig.captions || []).map(c => {
+        const meta = c.likes ? `[${c.likes.toLocaleString('fr')} ❤] ` : '';
+        return `• ${meta}${c.texte}`;
+      }).join('\n'));
+      setField('f-ig-hashtags', (ig.hashtags_frequents || []).map(t => '#' + t).join(' '));
+    }
+
+    // Blocs affichés selon ce qui est réellement rempli
+    show('block-insta', Boolean(ig));
+    show('block-maps', Boolean(val('f-horaires') || val('f-avis')));
+    show('field-maps-link', Boolean(val('f-maps')));
 
     loadPhotos(data.photos || []);
+    renderSources();
     updatePrompt();
   }
 
-  // ── Search ───────────────────────────────────────────────────────────────────
-  async function fetchPlace() {
-    const input = document.getElementById('search-input').value.trim();
-    if (!input) return;
+  function show(id, visible) {
+    const el = document.getElementById(id);
+    if (el) el.style.display = visible ? '' : 'none';
+  }
 
-    const btn    = document.getElementById('search-btn');
-    const btnLbl = document.getElementById('btn-label');
+  // ── Sources ──────────────────────────────────────────────────────────────────
+  const OTHER = { google: 'instagram', instagram: 'google' };
+  const LABEL = { google: 'Google Maps', instagram: 'Instagram' };
+
+  function detectSource(input) {
+    const s = input.trim();
+    return /instagram\.com/i.test(s) || /^@[A-Za-z0-9._]+$/.test(s) ? 'instagram' : 'google';
+  }
+
+  function isAvailable(id) {
+    const s = available.find(s => s.id === id);
+    return !s || s.configured;   // avant le chargement de /api/sources, on n'empêche rien
+  }
+
+  // Pastilles de provenance + champ d'enrichissement pour la source manquante.
+  function renderSources() {
+    const pills = document.getElementById('src-pills');
+    pills.innerHTML = '';
+    for (const id of ['google', 'instagram']) {
+      if (!sources.includes(id)) continue;
+      const span = document.createElement('span');
+      span.className   = 'src-pill';
+      span.textContent = '✓ ' + LABEL[id];
+      pills.appendChild(span);
+    }
+
+    const missing = ['google', 'instagram'].find(id => !sources.includes(id));
+    const row = document.getElementById('enrich-row');
+    if (!record || !missing || !isAvailable(missing)) { row.classList.remove('show'); return; }
+
+    document.getElementById('enrich-input').placeholder = missing === 'instagram'
+      ? '＋ Enrichir avec le compte Instagram : instagram.com/…'
+      : '＋ Enrichir avec Google Maps : lien Maps ou « Nom Ville »';
+    document.getElementById('enrich-label').textContent = 'Enrichir';
+    row.classList.add('show');
+  }
+
+  async function loadSources() {
+    try {
+      available = await (await fetch('/api/sources')).json();
+      const off = available.filter(s => !s.configured);
+      if (off.length) {
+        const status = document.getElementById('status');
+        status.className   = 'status-msg error';
+        status.textContent = `⚠ Source${off.length > 1 ? 's' : ''} désactivée${off.length > 1 ? 's' : ''} (clé absente du .env) : ${off.map(s => s.label).join(', ')}`;
+      }
+    } catch { /* le serveur répondra de toute façon à la recherche */ }
+  }
+
+  // ── Search ───────────────────────────────────────────────────────────────────
+  // Un seul chemin pour la recherche initiale et pour l'enrichissement : seule
+  // change la présence de `merge_with`, que le serveur fusionne avec le résultat.
+  async function runSearch({ input, source, mergeWith, btnId, spinnerId, labelId, idleLabel }) {
+    const btn    = document.getElementById(btnId);
+    const label  = document.getElementById(labelId);
     const status = document.getElementById('status');
 
+    if (!isAvailable(source)) {
+      status.className   = 'status-msg error';
+      status.textContent = `✗ Source ${LABEL[source]} désactivée : clé absente du .env.`;
+      return false;
+    }
+
     btn.disabled = true;
-    document.getElementById('spinner').classList.add('show');
-    btnLbl.textContent   = 'Recherche…';
-    status.className     = 'status-msg loading';
-    status.textContent   = "Interrogation de l'API Google Maps…";
+    document.getElementById(spinnerId).classList.add('show');
+    label.textContent  = source === 'instagram' ? 'Scraping…' : 'Recherche…';
+    status.className   = 'status-msg loading';
+    status.textContent = source === 'instagram'
+      ? 'Récupération du profil Instagram — le scraper met généralement 30 s à 2 min…'
+      : "Interrogation de l'API Google Maps…";
 
     try {
-      const isUrl = input.startsWith('http');
-      const res   = await fetch('/api/fetch-place', {
+      const isUrl   = input.startsWith('http');
+      const payload = isUrl ? { url: input } : { query: input };
+      payload.source = source;
+      if (mergeWith) payload.merge_with = mergeWith;
+
+      const res  = await fetch('/api/fetch-place', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(isUrl ? { url: input } : { query: input }),
+        body: JSON.stringify(payload),
       });
       const data = await res.json();
       if (!res.ok || data.error) throw new Error(data.error || 'Erreur inconnue');
       populateFields(data);
-      status.className = 'status-msg';
+      status.className   = 'status-msg';
+      status.textContent = '';
+      return true;
     } catch (err) {
-      status.className = 'status-msg error';
+      status.className   = 'status-msg error';
       status.textContent = '✗ ' + err.message;
+      return false;
     } finally {
       btn.disabled = false;
-      document.getElementById('spinner').classList.remove('show');
-      btnLbl.textContent = 'Rechercher';
+      document.getElementById(spinnerId).classList.remove('show');
+      label.textContent = idleLabel;
     }
+  }
+
+  async function fetchPlace() {
+    const input = document.getElementById('search-input').value.trim();
+    if (!input) return;
+
+    // Nouvelle recherche : on repart d'une fiche vierge.
+    record = null; sources = []; lastInjected = {};
+    for (const id of ['f-nom','f-type','f-adresse','f-tel','f-site','f-maps','f-horaires',
+                      'f-avis','f-ig-handle','f-ig-followers','f-ig-bio','f-ig-captions','f-ig-hashtags']) {
+      const el = document.getElementById(id);
+      if (el) el.value = '';
+    }
+
+    await runSearch({
+      input, source: detectSource(input),
+      btnId: 'search-btn', spinnerId: 'spinner', labelId: 'btn-label', idleLabel: 'Rechercher',
+    });
+  }
+
+  // Deuxième source pour le même établissement : le résultat est fusionné.
+  async function enrichPlace() {
+    const input = document.getElementById('enrich-input').value.trim();
+    if (!input || !record) return;
+
+    const missing = ['google', 'instagram'].find(id => !sources.includes(id));
+    if (!missing) return;
+
+    const ok = await runSearch({
+      input, source: missing, mergeWith: record,
+      btnId: 'enrich-btn', spinnerId: 'enrich-spinner', labelId: 'enrich-label', idleLabel: 'Enrichir',
+    });
+    if (ok) document.getElementById('enrich-input').value = '';
   }
 
   // ── Copy prompt ──────────────────────────────────────────────────────────────
@@ -709,10 +1008,27 @@ Propose un design soigné et distinctif, pas un template générique.`;
     setTimeout(() => ok.classList.remove('show'), 2500);
   }
 
+  // ── Divers ───────────────────────────────────────────────────────────────────
+  // Même règle de slug que côté serveur (lib/slug.js) pour que le nom du ZIP
+  // et le dossier annoncé dans le prompt coïncident.
+  function slugify(str, fallback = 'etablissement') {
+    const slug = (str || '')
+      .normalize('NFD')
+      .replace(/\p{M}/gu, '')
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-|-$/g, '');
+    return slug || fallback;
+  }
+
   document.getElementById('search-input').addEventListener('keydown', e => {
     if (e.key === 'Enter') fetchPlace();
   });
+  document.getElementById('enrich-input').addEventListener('keydown', e => {
+    if (e.key === 'Enter') enrichPlace();
+  });
 
+  loadSources();
   updatePrompt();
 </script>
 </body>
