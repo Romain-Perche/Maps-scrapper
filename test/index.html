@@ -1,0 +1,1378 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<!-- ==========================================================================
+     PANDORA — Site vitrine
+     Fichier unique (HTML + CSS + JS) + le dossier photos/.
+     À héberger tel quel : index.html et photos/ dans le même répertoire.
+
+     POUR MODIFIER LE SITE, 3 ENDROITS SUFFISENT :
+     1. Les variables CSS dans :root ......... couleurs, typo, rythme
+     2. Les commentaires « A REMPLACER » ..... téléphone, e-mail, mentions
+     3. Les balises <img src="photos/…"> ..... photos (voir plus bas)
+     ========================================================================== -->
+
+<!-- ---------- SEO : titre + meta ---------- -->
+<title>Pandora — Bijoux, perles d'eau douce et formes organiques | PANDORA ESSENCE</title>
+<meta name="description" content="Pandora : bijoux en placage or 14 carats, perles d'eau douce cultivées et formes organiques. Découvrez la collection PANDORA ESSENCE et les charms Disney × Pandora. Be Love.">
+<meta name="author" content="Pandora">
+<meta name="theme-color" content="#171320">
+<link rel="canonical" href="https://to.pandora.net/jewellery">
+
+<!-- Partage sur les réseaux (Open Graph + Twitter).
+     A REMPLACER : mettez l'URL absolue de votre domaine devant les images
+     (ex. https://mon-domaine.fr/photos/insta-5.jpg) une fois le site en ligne. -->
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Pandora">
+<meta property="og:title" content="Pandora — Révélez votre essence">
+<meta property="og:description" content="Formes organiques, perles d'eau douce cultivées et placage or 14 carats. La collection PANDORA ESSENCE.">
+<meta property="og:url" content="https://to.pandora.net/jewellery">
+<meta property="og:image" content="photos/insta-5.jpg">
+<meta property="og:locale" content="fr_FR">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Pandora — Révélez votre essence">
+<meta name="twitter:description" content="Formes organiques, perles d'eau douce cultivées et placage or 14 carats.">
+<meta name="twitter:image" content="photos/insta-5.jpg">
+
+<!-- Favicon : le logo Pandora -->
+<link rel="icon" href="photos/insta-1.jpg">
+<link rel="apple-touch-icon" href="photos/insta-1.jpg">
+
+<!-- ---------- Typographies ----------
+     Archivo (variable, axe de largeur) = titres, textes, libellés
+     Fraunces (italique, axes SOFT + WONK) = mots d'accroche uniquement
+     Pour un site 100 % hors-ligne : supprimer ces 3 lignes, les polices
+     de secours (Georgia / Helvetica) prennent le relais automatiquement. -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..700&family=Fraunces:ital,opsz,wght,SOFT,WONK@1,9..144,300..700,0..100,0..1&display=swap" rel="stylesheet">
+
+<!-- La photo du hero est chargée en priorité (meilleur Largest Contentful Paint) -->
+<link rel="preload" as="image" href="photos/insta-5.jpg">
+
+<!-- ---------- Données structurées Schema.org ----------
+     Type « Organization » et non « LocalBusiness » :
+     aucune adresse physique n'est connue, on n'en invente pas. -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Organization",
+  "name": "Pandora",
+  "alternateName": "PANDORA",
+  "url": "https://to.pandora.net/jewellery",
+  "logo": "photos/insta-1.jpg",
+  "image": "photos/insta-5.jpg",
+  "slogan": "Be Love",
+  "description": "Bijoux en placage or 14 carats, perles d'eau douce cultivées et formes organiques. Collection PANDORA ESSENCE et charms Disney × Pandora.",
+  "sameAs": [
+    "https://www.instagram.com/theofficialpandora/",
+    "https://to.pandora.net/jewellery"
+  ],
+  "contactPoint": {
+    "@type": "ContactPoint",
+    "contactType": "Service client",
+    "telephone": "+33123456789",
+    "email": "bonjour@exemple.fr",
+    "availableLanguage": ["fr", "en"]
+  }
+}
+</script>
+
+<style>
+/* ==========================================================================
+   1. TOKENS — tout se règle ici
+   ========================================================================== */
+:root{
+  /* Couleurs — palette « nacre » : la perle d'eau douce est irisée, d'où les
+     teintes lilas / pêche / aqua plutôt qu'un doré seul. Ce fond prune très
+     sombre est aussi le meilleur écrin pour des photos d'or et de perle. */
+  --ink:        #171320;   /* fond sombre, presque prune */
+  --ink-soft:   #241E31;   /* fond sombre secondaire */
+  --ink-line:   #3A3247;   /* filets sur fond sombre */
+  --pearl:      #F3EFF4;   /* fond clair, blanc perle froid */
+  --pearl-2:    #EAE4EE;   /* fond clair secondaire */
+  --text:       #2A2434;   /* texte sur fond clair */
+  --text-mute:  #5C5468;   /* texte secondaire sur fond clair (contraste 6,2:1) */
+  --text-inv:   #F6F2F7;   /* texte sur fond sombre */
+  --mute-inv:   #B3A8C0;   /* texte secondaire sur fond sombre (8,1:1) */
+  --line:       #D6CEDC;   /* filets sur fond clair */
+
+  --nacre-1:    #D8C7E0;   /* lilas */
+  --nacre-2:    #F2D3C8;   /* pêche */
+  --nacre-3:    #BFD8D3;   /* aqua */
+  --gold:       #B99154;   /* or 14 ct — sur fond SOMBRE seulement */
+  --gold-deep:  #7A5A22;   /* or foncé — pour le texte sur fond CLAIR (5,5:1) */
+
+  /* Typographie */
+  --sans: 'Archivo', 'Helvetica Neue', Arial, sans-serif;
+  --serif: 'Fraunces', 'Iowan Old Style', Georgia, serif;
+
+  /* Échelle de titres (fluide, sans media query) */
+  --t-hero: clamp(2.8rem, 9vw, 6.4rem);
+  --t-h2:   clamp(1.9rem, 5vw, 3.4rem);
+  --t-h3:   clamp(1.25rem, 2.6vw, 1.75rem);
+  --t-body: clamp(1rem, 0.97rem + 0.2vw, 1.1rem);
+
+  /* Rythme vertical et gouttières */
+  --gap: clamp(1.25rem, 3vw, 2.5rem);
+  --pad-x: clamp(1.25rem, 5vw, 5.5rem);
+  --pad-y: clamp(4.5rem, 10vw, 9rem);
+  --maxw: 1280px;
+  --radius: 20px;          /* arrondi des photos */
+
+  /* Formes organiques — reprise du vocabulaire produit « Organically Shaped ».
+     Réservées à UN seul élément : le contour d'or animé du hero. */
+  --blob-a: 58% 42% 47% 53% / 52% 48% 52% 48%;
+  --blob-b: 44% 56% 62% 38% / 46% 38% 62% 54%;
+  --blob-c: 63% 37% 40% 60% / 57% 62% 38% 43%;
+
+  --ease: cubic-bezier(.22,.61,.36,1);
+}
+
+/* ==========================================================================
+   2. BASE
+   ========================================================================== */
+*,*::before,*::after{ box-sizing:border-box; }
+html{ -webkit-text-size-adjust:100%; scroll-behavior:smooth; }
+body{
+  margin:0;
+  background:var(--pearl);
+  color:var(--text);
+  font-family:var(--sans);
+  font-size:var(--t-body);
+  line-height:1.65;
+  font-variation-settings:'wdth' 100;
+  -webkit-font-smoothing:antialiased;
+  overflow-x:hidden;
+}
+/* height:auto est indispensable : il neutralise l'attribut height="…" des
+   balises <img> (présent pour éviter les sauts de mise en page) et laisse
+   les ratios définis en CSS piloter la hauteur. */
+img{ max-width:100%; height:auto; display:block; }
+a{ color:inherit; }
+h1,h2,h3,h4{ margin:0; line-height:1.02; font-weight:600; }
+p{ margin:0 0 1em; }
+ul{ margin:0; padding:0; list-style:none; }
+
+/* Accessibilité : focus toujours visible */
+:focus-visible{
+  outline:2px solid var(--gold);
+  outline-offset:3px;
+  border-radius:2px;
+}
+/* Lien d'évitement pour la navigation au clavier */
+.skip{
+  position:absolute; left:-999px; top:0; z-index:200;
+  background:var(--ink); color:var(--text-inv);
+  padding:.85rem 1.25rem; text-decoration:none;
+}
+.skip:focus{ left:0; }
+
+/* --- Utilitaires de mise en page --- */
+.wrap{ max-width:var(--maxw); margin-inline:auto; padding-inline:var(--pad-x); }
+.section{ padding-block:var(--pad-y); }
+.section--tint{ background:var(--pearl-2); }
+.on-ink{ background:var(--ink); color:var(--text-inv); }
+/* L'en-tête est fixe : on décale les ancres pour qu'elles ne passent pas dessous */
+[id]{ scroll-margin-top:96px; }
+
+/* Sur-titre : petite capitale + pastille nacrée (la perle, à l'échelle du texte) */
+.eyebrow{
+  display:flex; align-items:center; gap:.6rem;
+  font-size:.72rem; font-weight:600;
+  letter-spacing:.22em; text-transform:uppercase;
+  color:var(--gold-deep);
+  margin:0 0 1.1rem;
+}
+.on-ink .eyebrow{ color:var(--gold); }
+.eyebrow::before{
+  content:''; flex:none; width:.5rem; height:.5rem;
+  border-radius:var(--blob-a);
+  background:radial-gradient(circle at 30% 30%, #fff, var(--nacre-1) 55%, var(--gold) 130%);
+}
+
+/* Titres de section : Archivo en largeur étendue, très serré */
+.h2{
+  font-size:var(--t-h2);
+  font-weight:600;
+  letter-spacing:-.03em;
+  font-variation-settings:'wdth' 112;
+  max-width:22ch;
+}
+/* Mot d'accroche en Fraunces italique — l'accent, utilisé avec parcimonie */
+.accent{
+  font-family:var(--serif);
+  font-style:italic;
+  font-weight:400;
+  font-variation-settings:'SOFT' 60,'WONK' 1;
+  letter-spacing:-.01em;
+}
+.lead{
+  font-size:clamp(1.05rem,1.8vw,1.3rem);
+  color:var(--text-mute);
+  max-width:56ch;
+}
+.on-ink .lead{ color:var(--mute-inv); }
+
+/* ==========================================================================
+   3. BOUTONS
+   ========================================================================== */
+.btn{
+  --btn-bg:var(--ink); --btn-fg:var(--text-inv); --btn-bd:var(--ink);
+  display:inline-flex; align-items:center; justify-content:center; gap:.6rem;
+  min-height:52px; padding:.85rem 1.6rem;
+  border:1px solid var(--btn-bd); border-radius:100px;
+  background:var(--btn-bg); color:var(--btn-fg);
+  font:inherit; font-size:.95rem; font-weight:600; letter-spacing:.02em;
+  text-decoration:none; cursor:pointer;
+  transition:transform .3s var(--ease), background .3s var(--ease);
+}
+.btn:hover{ transform:translateY(-2px); }
+.btn--gold{ --btn-bg:var(--gold); --btn-fg:#1B1408; --btn-bd:var(--gold); }
+.btn--ghost{ --btn-bg:transparent; --btn-fg:var(--text-inv); --btn-bd:var(--ink-line); }
+.btn--ghost:hover{ --btn-bg:rgba(255,255,255,.08); }
+.btn__ico{ flex:none; width:1.05em; height:1.05em; }
+
+/* ==========================================================================
+   4. EN-TÊTE
+   ========================================================================== */
+.hd{
+  position:fixed; inset:0 0 auto; z-index:100;
+  background:transparent;
+  border-bottom:1px solid transparent;
+  transition:background .4s var(--ease), border-color .4s var(--ease);
+}
+.hd__in{
+  display:flex; align-items:center; justify-content:space-between;
+  gap:var(--gap); min-height:74px;
+  max-width:var(--maxw); margin-inline:auto; padding-inline:var(--pad-x);
+}
+/* État « défilé » : le fond apparaît */
+.hd.is-stuck{
+  background:rgba(23,19,32,.86);
+  backdrop-filter:blur(14px);
+  border-bottom-color:var(--ink-line);
+}
+
+/* Logo : le vrai logo Pandora (photos/insta-1.jpg) + le mot-symbole.
+   Pour un autre fichier : changer le src ci-dessous, c'est tout. */
+.logo{
+  display:inline-flex; align-items:center; gap:.7rem;
+  color:var(--text-inv); text-decoration:none;
+}
+.logo img{
+  width:34px; height:34px; flex:none;
+  border-radius:9px;
+  border:1px solid rgba(255,255,255,.16);
+}
+.logo__word{
+  font-size:1.02rem; font-weight:600;
+  letter-spacing:.34em; text-transform:uppercase;
+  font-variation-settings:'wdth' 108;
+}
+
+/* Navigation */
+.nav__list{ display:flex; align-items:center; gap:clamp(1rem,2.4vw,2.2rem); }
+.nav__link{
+  position:relative;
+  font-size:.9rem; font-weight:500; text-decoration:none;
+  color:var(--text-inv); padding:.4rem 0;
+}
+.nav__link::after{
+  content:''; position:absolute; left:0; bottom:0;
+  width:100%; height:1px; background:var(--gold);
+  transform:scaleX(0); transform-origin:left;
+  transition:transform .35s var(--ease);
+}
+.nav__link:hover::after,
+.nav__link:focus-visible::after{ transform:scaleX(1); }
+
+.hd__cta{ display:none; }
+/* Bouton hamburger (mobile) */
+.burger{
+  display:inline-flex; flex-direction:column; justify-content:center; gap:5px;
+  width:46px; height:46px; padding:0 11px;
+  background:none; border:1px solid var(--ink-line); border-radius:100px;
+  cursor:pointer;
+}
+.burger span{
+  display:block; height:1.5px; background:var(--text-inv);
+  transition:transform .3s var(--ease), opacity .2s;
+}
+.burger[aria-expanded="true"] span:nth-child(1){ transform:translateY(6.5px) rotate(45deg); }
+.burger[aria-expanded="true"] span:nth-child(2){ opacity:0; }
+.burger[aria-expanded="true"] span:nth-child(3){ transform:translateY(-6.5px) rotate(-45deg); }
+
+/* Menu mobile : panneau plein écran */
+@media (max-width:899px){
+  .nav{
+    position:fixed; inset:74px 0 auto; z-index:99;
+    background:rgba(23,19,32,.97);
+    backdrop-filter:blur(16px);
+    border-bottom:1px solid var(--ink-line);
+    padding:1.2rem var(--pad-x) 2.2rem;
+    transform:translateY(-115%);
+    transition:transform .45s var(--ease);
+  }
+  .nav.is-open{ transform:translateY(0); }
+  .nav__list{ flex-direction:column; align-items:stretch; gap:0; }
+  .nav__item{ border-bottom:1px solid var(--ink-line); }
+  .nav__link{ display:block; padding:1.05rem 0; font-size:1.12rem; }
+  .nav__link::after{ display:none; }
+}
+@media (min-width:900px){
+  .burger{ display:none; }
+  .hd__cta{ display:inline-flex; }
+  .nav{ margin-left:auto; }
+}
+
+/* ==========================================================================
+   5. HERO
+   Thèse de la page : la superposition. « Solo or layered », « mix and match »,
+   « sculptural stacks » — le vocabulaire de la marque est celui de l'empilement.
+   Deux photos se chevauchent donc, cernées d'un contour d'or organique.
+   ========================================================================== */
+.hero{
+  position:relative; overflow:hidden;
+  background:var(--ink); color:var(--text-inv);
+  padding-block:clamp(7.5rem,18vw,10rem) clamp(3.5rem,8vw,6rem);
+}
+/* Halo irisé très diffus, en fond */
+.hero::before{
+  content:''; position:absolute; z-index:0;
+  width:min(120vw,1100px); aspect-ratio:1;
+  right:-28%; top:-32%;
+  background:
+    radial-gradient(circle at 50% 50%, rgba(216,199,224,.28), transparent 62%),
+    radial-gradient(circle at 62% 38%, rgba(242,211,200,.18), transparent 58%);
+  filter:blur(14px);
+  pointer-events:none;
+}
+.hero__in{ position:relative; z-index:1; }
+.hero__grid{
+  display:grid; gap:clamp(2.5rem,6vw,4rem);
+  grid-template-columns:1fr;
+  align-items:center;
+}
+.hero h1{
+  font-size:var(--t-hero);
+  font-weight:600;
+  letter-spacing:-.045em;
+  font-variation-settings:'wdth' 108;
+  text-wrap:balance;
+  margin-bottom:1.4rem;
+}
+.hero h1 .accent{
+  display:block;
+  letter-spacing:-.02em;
+  color:var(--nacre-1);
+  font-variation-settings:'SOFT' 90,'WONK' 1;
+}
+.hero__acts{ display:flex; flex-wrap:wrap; gap:.8rem; margin-top:2.2rem; }
+
+/* --- Bandeau de chiffres : mesuré, sur une ligne, filets fins --- */
+.figs{
+  display:flex; flex-wrap:wrap; gap:.4rem clamp(1.1rem,2.6vw,2rem);
+  margin-top:clamp(3rem,7vw,4.5rem);
+  border-top:1px solid var(--ink-line);
+  padding-top:1.4rem;
+}
+.figs__i{ display:flex; align-items:baseline; gap:.55rem; }
+.figs__n{
+  font-size:1.15rem; font-weight:600; letter-spacing:-.01em;
+  font-variation-settings:'wdth' 105;
+}
+.figs__l{
+  font-size:.74rem; letter-spacing:.16em; text-transform:uppercase;
+  color:var(--mute-inv);
+}
+
+/* ---------------- LA SIGNATURE : la pile de photos ----------------
+   .stack__main = la grande photo ; .stack__sub = la petite, décalée ;
+   .stack__ring = le contour d'or qui « respire » entre trois formes
+   organiques (seul endroit du site où cette forme est utilisée).
+------------------------------------------------------------------ */
+.stack{
+  position:relative;
+  width:100%; max-width:430px;
+  margin-inline:auto;
+  padding-bottom:9%;              /* place pour le débord de la petite photo */
+}
+.stack__main{
+  position:relative; z-index:1;
+  border-radius:var(--radius);
+  overflow:hidden;
+  box-shadow:0 50px 90px -40px rgba(0,0,0,.85);
+}
+.stack__main img{ width:100%; aspect-ratio:4/5; object-fit:cover; }
+.stack__sub{
+  position:absolute; z-index:2;
+  width:46%; right:-5%; bottom:0;
+  border-radius:16px;
+  overflow:hidden;
+  border:5px solid var(--ink);    /* le liseré détache la 2e photo de la 1re */
+  box-shadow:0 26px 50px -26px rgba(0,0,0,.8);
+}
+.stack__sub img{ width:100%; aspect-ratio:4/5; object-fit:cover; }
+/* Contour d'or animé : le motif organique, réduit à une ligne */
+.stack__ring{
+  position:absolute; z-index:0;
+  inset:-7% -9% 1%;
+  border:1px solid rgba(185,145,84,.5);
+  border-radius:var(--blob-a);
+  animation:morph 22s var(--ease) infinite;
+  pointer-events:none;
+}
+@keyframes morph{
+  0%,100%{ border-radius:var(--blob-a); transform:rotate(0deg); }
+  33%    { border-radius:var(--blob-b); transform:rotate(3deg); }
+  66%    { border-radius:var(--blob-c); transform:rotate(-2.5deg); }
+}
+
+@media (min-width:900px){
+  .hero__grid{ grid-template-columns:1.05fr .95fr; }
+  .hero__media{ order:2; }
+}
+
+/* ==========================================================================
+   6. PRÉSENTATION
+   ========================================================================== */
+.about__grid{
+  display:grid; gap:clamp(2rem,5vw,4rem);
+  grid-template-columns:1fr;
+}
+@media (min-width:900px){
+  .about__grid{ grid-template-columns:.85fr 1.15fr; align-items:start; }
+}
+.about__fig{ margin:2.2rem 0 0; }
+.about__fig img{
+  width:100%; aspect-ratio:4/5; object-fit:cover;
+  border-radius:var(--radius);
+}
+.about__body p{ color:var(--text-mute); max-width:60ch; }
+/* Citation : la bio Instagram, traitée comme une signature */
+.quote{
+  margin:2.5rem 0 0; padding-top:1.8rem;
+  border-top:1px solid var(--line);
+}
+.quote p{
+  font-family:var(--serif); font-style:italic;
+  font-variation-settings:'SOFT' 80,'WONK' 1;
+  font-size:clamp(1.6rem,4vw,2.4rem);
+  line-height:1.15; letter-spacing:-.02em;
+  color:var(--text); margin:0;
+}
+.quote cite{
+  display:block; margin-top:.9rem;
+  font-family:var(--sans); font-style:normal;
+  font-size:.74rem; letter-spacing:.18em; text-transform:uppercase;
+  color:var(--text-mute);
+}
+
+/* ==========================================================================
+   7. COLLECTIONS — liste éditoriale, pas une grille de cartes.
+   Chaque ligne : nom + description + pièces réelles de la collection.
+   ========================================================================== */
+.coll{ border-top:1px solid var(--line); margin-top:clamp(2.5rem,6vw,3.5rem); }
+.coll__row{
+  position:relative; overflow:hidden;
+  display:grid; gap:.75rem clamp(1.5rem,4vw,3rem);
+  grid-template-columns:1fr;
+  padding:clamp(1.6rem,3.5vw,2.4rem) 0;
+  border-bottom:1px solid var(--line);
+  transition:background .45s var(--ease);
+}
+.coll__row:hover{ background:rgba(255,255,255,.55); }
+/* Voile irisé qui balaie la ligne au survol — « catch every droplet of light » */
+.coll__row::after{
+  content:''; position:absolute; inset:0; z-index:0;
+  background:linear-gradient(100deg,
+    transparent 30%, rgba(216,199,224,.5) 48%,
+    rgba(242,211,200,.45) 58%, transparent 76%);
+  transform:translateX(-100%);
+  transition:transform .9s var(--ease);
+  pointer-events:none;
+}
+.coll__row:hover::after{ transform:translateX(100%); }
+.coll__row > *{ position:relative; z-index:1; }
+.coll__name{
+  font-size:var(--t-h3); font-weight:600;
+  letter-spacing:-.02em; font-variation-settings:'wdth' 110;
+  text-wrap:balance;
+}
+.coll__tag{
+  display:block; margin-bottom:.5rem;
+  font-size:.7rem; font-weight:600; letter-spacing:.2em; text-transform:uppercase;
+  color:var(--gold-deep);
+}
+.coll__desc{ margin:0 0 1rem; color:var(--text-mute); max-width:52ch; }
+/* Noms de pièces : gardés en anglais, ce sont les intitulés officiels */
+.coll__pieces{ display:flex; flex-wrap:wrap; gap:.45rem; }
+.coll__pieces li{
+  font-size:.78rem; line-height:1.35;
+  padding:.35rem .75rem;
+  border:1px solid var(--line); border-radius:100px;
+  color:var(--text-mute); background:rgba(255,255,255,.55);
+}
+@media (min-width:800px){
+  .coll__row{ grid-template-columns:minmax(210px,.9fr) 1.6fr; align-items:start; }
+}
+
+/* ==========================================================================
+   8. GALERIE
+   Toutes les photos sont au format 4:5 (le format natif Instagram) : le ratio
+   est imposé en CSS, donc une photo de remplacement se recadre proprement.
+   POUR CHANGER UNE PHOTO : remplacer le fichier dans photos/ ou le src,
+   et adapter l'attribut alt (description) + la légende <figcaption>.
+   ========================================================================== */
+.g__grid{
+  display:grid; gap:var(--gap);
+  grid-template-columns:repeat(2,1fr);
+  align-items:start;                 /* indispensable : préserve les ratios */
+  margin-top:clamp(2.5rem,6vw,3.5rem);
+}
+@media (min-width:900px){ .g__grid{ grid-template-columns:repeat(3,1fr); } }
+.g__fig{ margin:0; }
+/* Décalage vertical d'une photo sur deux (marge, pas transform :
+   aucun risque de chevauchement) */
+@media (min-width:900px){
+  .g__fig--offset{ margin-top:clamp(1.5rem,4vw,3rem); }
+}
+.g__link{
+  display:block; text-decoration:none;
+  border-radius:var(--radius);
+  overflow:hidden;
+  transition:transform .5s var(--ease), box-shadow .5s var(--ease);
+}
+.g__link:hover,
+.g__link:focus-visible{
+  transform:translateY(-5px);
+  box-shadow:0 24px 46px -28px rgba(42,36,52,.55);
+}
+.g__link img{
+  width:100%; aspect-ratio:4/5; object-fit:cover;
+  transition:transform .7s var(--ease);
+}
+.g__link:hover img{ transform:scale(1.04); }
+.g__cap{
+  margin-top:.7rem;
+  font-size:.78rem; line-height:1.4; color:var(--text-mute);
+}
+
+/* ==========================================================================
+   9. INSTAGRAM — fond sombre, en écho au hero
+   ========================================================================== */
+.ig__head{
+  display:grid; gap:clamp(1.5rem,4vw,3rem);
+  grid-template-columns:1fr;
+  align-items:end;
+}
+@media (min-width:820px){
+  .ig__head{ grid-template-columns:1fr auto; }
+}
+.ig__id{ display:flex; align-items:center; gap:1rem; margin:1rem 0 .5rem; }
+.ig__id img{
+  width:60px; height:60px; flex:none;
+  border-radius:50%;
+  border:1px solid var(--ink-line);
+}
+.ig__handle{
+  display:flex; align-items:center; gap:.5rem; margin:0;
+  font-size:clamp(1.2rem,3.2vw,1.8rem); font-weight:600;
+  letter-spacing:-.02em; font-variation-settings:'wdth' 108;
+  word-break:break-word;
+}
+.ig__badge{ width:1.05em; height:1.05em; flex:none; color:var(--nacre-3); }
+.ig__meta{
+  display:flex; flex-wrap:wrap; gap:.3rem 1.2rem;
+  font-size:.86rem; color:var(--mute-inv); margin:0;
+}
+/* Aperçu des publications */
+.ig__grid{
+  display:grid; gap:var(--gap);
+  grid-template-columns:repeat(2,1fr);
+  margin-top:clamp(2.5rem,6vw,3.5rem);
+}
+@media (min-width:900px){ .ig__grid{ grid-template-columns:repeat(4,1fr); } }
+.post{
+  display:flex; flex-direction:column;
+  text-decoration:none; color:inherit;
+  border:1px solid var(--ink-line); border-radius:var(--radius);
+  background:var(--ink-soft);
+  overflow:hidden;
+  transition:transform .4s var(--ease), border-color .4s var(--ease);
+}
+.post:hover,
+.post:focus-visible{ transform:translateY(-4px); border-color:var(--gold); }
+.post__img{ position:relative; }
+.post__img img{ width:100%; aspect-ratio:4/5; object-fit:cover; }
+.post__likes{
+  position:absolute; z-index:1; left:.7rem; bottom:.7rem;
+  display:inline-flex; align-items:center; gap:.35rem;
+  padding:.3rem .6rem; border-radius:100px;
+  background:rgba(23,19,32,.75);
+  backdrop-filter:blur(6px);
+  font-size:.76rem; font-weight:600; color:var(--text-inv);
+}
+.post__likes svg{ width:.9em; height:.9em; }
+.post__txt{
+  margin:0; padding:1rem 1.1rem 1.2rem;
+  font-size:.86rem; line-height:1.35rem; color:var(--mute-inv);
+}
+/* Extrait de légende sur 3 lignes maximum.
+   La coupe est portée par le <span> intérieur (et non par le <p>, qui est un
+   élément flex : le rognage y est ignoré par certains navigateurs).
+   La hauteur max double le line-clamp au cas où il ne serait pas géré.
+   Si vous changez line-height, recalculez : 3 × la valeur. */
+.post__txt span{
+  display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical;
+  overflow:hidden;
+  max-height:calc(1.35rem * 3);
+}
+
+/* ==========================================================================
+   10. CONTACT — pas d'adresse, pas de carte : rien n'est inventé
+   ========================================================================== */
+.ct__grid{
+  display:grid; gap:var(--gap);
+  grid-template-columns:1fr;
+  margin-top:clamp(2.5rem,6vw,3.5rem);
+}
+@media (min-width:760px){ .ct__grid{ grid-template-columns:repeat(3,1fr); } }
+.ct__card{
+  display:flex; flex-direction:column; gap:.5rem;
+  padding:clamp(1.5rem,3vw,2rem);
+  border:1px solid var(--line); border-radius:22px;
+  background:#fff;
+  transition:transform .35s var(--ease), box-shadow .35s var(--ease);
+}
+.ct__card:hover{
+  transform:translateY(-3px);
+  box-shadow:0 18px 40px -24px rgba(42,36,52,.4);
+}
+.ct__ico{
+  width:36px; height:36px; margin-bottom:.4rem;
+  display:grid; place-items:center;
+  border-radius:var(--blob-a);
+  background:linear-gradient(140deg,var(--nacre-1),var(--nacre-2));
+  color:var(--text);
+}
+.ct__ico svg{ width:18px; height:18px; }
+.ct__k{
+  font-size:.72rem; font-weight:600; letter-spacing:.18em; text-transform:uppercase;
+  color:var(--text-mute);
+}
+.ct__v{
+  font-size:1.12rem; font-weight:600; letter-spacing:-.01em;
+  text-decoration:none; color:var(--text);
+  word-break:break-word;
+}
+.ct__v:hover{ text-decoration:underline; text-underline-offset:3px; }
+.ct__note{ font-size:.85rem; color:var(--text-mute); margin:0; }
+.ct__legal{
+  margin-top:clamp(1.5rem,4vw,2rem);
+  font-size:.85rem; color:var(--text-mute);
+}
+
+/* ==========================================================================
+   11. PIED DE PAGE
+   ========================================================================== */
+.ft{ background:var(--ink); color:var(--text-inv); padding-block:clamp(3rem,7vw,4.5rem) 2rem; }
+.ft__top{
+  display:grid; gap:clamp(2rem,5vw,3rem);
+  grid-template-columns:1fr;
+  padding-bottom:2.5rem; border-bottom:1px solid var(--ink-line);
+}
+@media (min-width:760px){ .ft__top{ grid-template-columns:1.4fr 1fr 1fr; } }
+.ft__tag{ color:var(--mute-inv); max-width:34ch; margin-top:1rem; font-size:.92rem; }
+.ft__h{
+  font-size:.72rem; font-weight:600; letter-spacing:.2em; text-transform:uppercase;
+  color:var(--gold); margin:0 0 1rem;
+}
+.ft__list li + li{ margin-top:.6rem; }
+.ft__list a{ font-size:.92rem; color:var(--mute-inv); text-decoration:none; }
+.ft__list a:hover{ color:var(--text-inv); text-decoration:underline; text-underline-offset:3px; }
+.ft__soc{ display:flex; gap:.6rem; margin-top:1.4rem; }
+.ft__soc a{
+  width:44px; height:44px; display:grid; place-items:center;
+  border:1px solid var(--ink-line); border-radius:100px; color:var(--text-inv);
+  transition:background .3s var(--ease), border-color .3s var(--ease);
+}
+.ft__soc a:hover{ background:rgba(255,255,255,.08); border-color:var(--gold); }
+.ft__soc svg{ width:19px; height:19px; }
+.ft__bot{
+  display:flex; flex-wrap:wrap; gap:.6rem 1.5rem; justify-content:space-between;
+  padding-top:1.6rem; font-size:.8rem; color:var(--mute-inv);
+}
+.ft__bot p{ margin:0; }
+.ft__bot a{ color:var(--mute-inv); }
+
+/* ==========================================================================
+   12. ANIMATIONS D'APPARITION
+   ========================================================================== */
+.reveal{
+  opacity:0; transform:translateY(22px);
+  transition:opacity .8s var(--ease), transform .8s var(--ease);
+}
+.reveal.is-in{ opacity:1; transform:none; }
+/* Décalage en cascade */
+.reveal[data-d="1"]{ transition-delay:.09s; }
+.reveal[data-d="2"]{ transition-delay:.18s; }
+.reveal[data-d="3"]{ transition-delay:.27s; }
+.reveal[data-d="4"]{ transition-delay:.36s; }
+
+/* Respect du réglage système « réduire les animations » */
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{
+    animation-duration:.001ms !important;
+    animation-iteration-count:1 !important;
+    transition-duration:.001ms !important;
+  }
+  html{ scroll-behavior:auto; }
+  .reveal{ opacity:1; transform:none; }
+}
+</style>
+</head>
+
+<body>
+<a class="skip" href="#main">Aller au contenu principal</a>
+
+<!-- ============================== EN-TÊTE ============================== -->
+<header class="hd" id="hd">
+  <div class="hd__in">
+
+    <a class="logo" href="#top" aria-label="Pandora — retour en haut de page">
+      <img src="photos/insta-1.jpg" width="34" height="34" alt="Logo Pandora">
+      <span class="logo__word">Pandora</span>
+    </a>
+
+    <!-- Navigation principale -->
+    <nav class="nav" id="nav" aria-label="Navigation principale">
+      <ul class="nav__list">
+        <li class="nav__item"><a class="nav__link" href="#univers">L'univers</a></li>
+        <li class="nav__item"><a class="nav__link" href="#collections">Collections</a></li>
+        <li class="nav__item"><a class="nav__link" href="#galerie">Galerie</a></li>
+        <li class="nav__item"><a class="nav__link" href="#instagram">Instagram</a></li>
+        <li class="nav__item"><a class="nav__link" href="#contact">Contact</a></li>
+      </ul>
+    </nav>
+
+    <!-- A REMPLACER : le numéro de téléphone (ici, dans le hero, dans la
+         section Contact, dans le pied de page et dans le bloc Schema.org) -->
+    <a class="btn btn--gold hd__cta" href="tel:+33123456789">
+      <svg class="btn__ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+        <path d="M4 4h4l2 5-2.5 1.5a12 12 0 0 0 6 6L15 14l5 2v4a1 1 0 0 1-1 1A17 17 0 0 1 3 5a1 1 0 0 1 1-1z" stroke-linejoin="round"/>
+      </svg>
+      Appeler
+    </a>
+
+    <button class="burger" id="burger" type="button"
+            aria-label="Ouvrir le menu" aria-expanded="false" aria-controls="nav">
+      <span></span><span></span><span></span>
+    </button>
+  </div>
+</header>
+
+<main id="main">
+
+  <!-- =============================== HERO =============================== -->
+  <section class="hero" id="top">
+    <div class="hero__in wrap">
+      <div class="hero__grid">
+
+        <div class="hero__txt">
+          <p class="eyebrow reveal">Pandora Essence · Collection été</p>
+          <h1 class="reveal" data-d="1">
+            Révélez votre
+            <span class="accent">essence</span>
+          </h1>
+          <p class="lead reveal" data-d="2">
+            Des formes organiques, des perles d'eau douce cultivées et un placage
+            or 14 carats pensé pour capter chaque goutte de lumière. Seule ou
+            superposée, chaque pièce se porte comme une phrase que vous finissez vous-même.
+          </p>
+
+          <div class="hero__acts reveal" data-d="3">
+            <!-- A REMPLACER : numéro de téléphone -->
+            <a class="btn btn--gold" href="tel:+33123456789">
+              <svg class="btn__ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+                <path d="M4 4h4l2 5-2.5 1.5a12 12 0 0 0 6 6L15 14l5 2v4a1 1 0 0 1-1 1A17 17 0 0 1 3 5a1 1 0 0 1 1-1z" stroke-linejoin="round"/>
+              </svg>
+              Appeler la boutique
+            </a>
+            <a class="btn btn--ghost" href="https://to.pandora.net/jewellery" target="_blank" rel="noopener">
+              Voir la collection
+            </a>
+          </div>
+
+          <!-- Chiffres Instagram : la seule preuve sociale dont on dispose -->
+          <ul class="figs reveal" data-d="4">
+            <li class="figs__i">
+              <span class="figs__n">11,7 M</span>
+              <span class="figs__l">abonnés</span>
+            </li>
+            <li class="figs__i">
+              <span class="figs__n">5 652</span>
+              <span class="figs__l">publications</span>
+            </li>
+            <li class="figs__i">
+              <span class="figs__n">Certifié</span>
+              <span class="figs__l">compte officiel</span>
+            </li>
+          </ul>
+        </div>
+
+        <!-- La pile de photos : deux visuels superposés + contour d'or animé -->
+        <div class="hero__media reveal" data-d="2">
+          <div class="stack">
+            <span class="stack__ring" aria-hidden="true"></span>
+            <div class="stack__main">
+              <img src="photos/insta-5.jpg" width="1080" height="1350" fetchpriority="high" decoding="async"
+                   alt="De dos sur une plage, deux poignets portant des bangles en placage or superposés et des bagues chevalière serties.">
+            </div>
+            <div class="stack__sub">
+              <img src="photos/insta-13.jpg" width="1080" height="1350" loading="lazy" decoding="async"
+                   alt="Gros plan sur une main : deux bagues deux tons serties et un bangle doré, gouttes d'eau sur la peau.">
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================ PRÉSENTATION ============================ -->
+  <section class="section" id="univers">
+    <div class="wrap about__grid">
+      <div class="reveal">
+        <p class="eyebrow">L'univers</p>
+        <h2 class="h2">Le bijou comme <span class="accent">langage</span></h2>
+
+        <figure class="about__fig">
+          <img src="photos/insta-14.jpg" width="1080" height="1350" loading="lazy" decoding="async"
+               alt="Portrait souriant : deux bagues chevalière serties et un bangle doré, sur un fond rose et bleu.">
+        </figure>
+      </div>
+
+      <div class="about__body reveal" data-d="1">
+        <p>
+          Pandora dessine des bijoux faits pour être choisis, mélangés et portés
+          tous les jours. Les formes ne sont jamais tout à fait régulières :
+          galets, gouttes, cercles légèrement déformés — des contours organiques
+          qui accrochent la lumière autrement selon le geste.
+        </p>
+        <p>
+          La collection PANDORA ESSENCE réunit un placage or 14 carats, des pierres
+          serties affleurantes et des perles d'eau douce cultivées, chacune unique.
+          À côté, les charms Disney × Pandora et les diamants de synthèse racontent
+          des histoires plus précises, à composer bracelet après bracelet.
+        </p>
+        <p>
+          Rien n'est figé : une pièce seule pour un jour discret, un empilement de
+          bagues et de colliers de longueurs différentes pour un autre. C'est vous
+          qui réglez l'intensité.
+        </p>
+
+        <blockquote class="quote">
+          <p>Be Love</p>
+          <cite>Signature Pandora · @theofficialpandora</cite>
+        </blockquote>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================= COLLECTIONS =============================
+       Les intitulés de pièces sont conservés en anglais : ce sont les noms
+       officiels des produits tels qu'ils apparaissent en boutique.
+  -->
+  <section class="section section--tint" id="collections">
+    <div class="wrap">
+      <div class="reveal">
+        <p class="eyebrow">Collections &amp; prestations</p>
+        <h2 class="h2">Six familles, une même <span class="accent">lumière</span></h2>
+      </div>
+
+      <div class="coll">
+
+        <article class="coll__row reveal">
+          <div>
+            <span class="coll__tag">#PandoraEssence</span>
+            <h3 class="coll__name">Formes organiques, or 14 ct</h3>
+          </div>
+          <div>
+            <p class="coll__desc">
+              Le cœur de la collection : des volumes sculpturaux en placage or
+              14 carats, pierres serties affleurantes, à porter en contraste
+              deux tons. Jamais une seule chose à la fois.
+            </p>
+            <ul class="coll__pieces">
+              <li>Organically Shaped Stone-Set Stud Earrings</li>
+              <li>Organically Shaped Stone-Set Bangle</li>
+              <li>Organically Shaped Two-Tone Stacking Rings</li>
+              <li>Two-Tone Entwined Band Ring</li>
+            </ul>
+          </div>
+        </article>
+
+        <article class="coll__row reveal">
+          <div>
+            <span class="coll__tag">Perles</span>
+            <h3 class="coll__name">Perles d'eau douce cultivées</h3>
+          </div>
+          <div>
+            <p class="coll__desc">
+              Des perles traitées, à la forme jamais tout à fait ronde, posées
+              sur des cercles pavés. Seules elles s'imposent ; superposées, elles
+              prennent toute la place.
+            </p>
+            <ul class="coll__pieces">
+              <li>Organically Shaped Pavé Circle &amp; Treated Freshwater Cultured Pearl Collier Necklace</li>
+              <li>Organically Shaped Oval &amp; Treated Freshwater Cultured Pearl Bracelet</li>
+              <li>Treated Freshwater Cultured Pearl &amp; Organically Shaped Double Band Ring</li>
+            </ul>
+          </div>
+        </article>
+
+        <article class="coll__row reveal">
+          <div>
+            <span class="coll__tag">Bagues</span>
+            <h3 class="coll__name">Chevalières serties</h3>
+          </div>
+          <div>
+            <p class="coll__desc">
+              Trois tailles, un même plateau ovale bombé. Portées en série sur
+              la même main, elles dessinent une ligne franche.
+            </p>
+            <ul class="coll__pieces">
+              <li>Small Stone-Set Oval Signet Ring</li>
+              <li>Medium Stone-Set Oval Signet Ring</li>
+              <li>Stone-Set Oval Domed Signet Ring</li>
+            </ul>
+          </div>
+        </article>
+
+        <article class="coll__row reveal">
+          <div>
+            <span class="coll__tag">#SummerEarrings</span>
+            <h3 class="coll__name">Boucles d'oreilles sculpturales</h3>
+          </div>
+          <div>
+            <p class="coll__desc">
+              Créoles ouvertes, créoles à charnière, puces ovales : de quoi
+              composer un empilement d'oreille complet, du lobe au cartilage.
+            </p>
+            <ul class="coll__pieces">
+              <li>Organically Shaped Stone-Set Hinged Hoop Earrings</li>
+              <li>Organically Shaped Stone-Set Heart Hoop Earrings</li>
+              <li>Organically Shaped Two-tone Open Hoop Earrings</li>
+              <li>Organically Shaped Stone-Set Oval Stud Earrings</li>
+            </ul>
+          </div>
+        </article>
+
+        <article class="coll__row reveal">
+          <div>
+            <span class="coll__tag">Colliers</span>
+            <h3 class="coll__name">Cascades &amp; longueurs multiples</h3>
+          </div>
+          <div>
+            <p class="coll__desc">
+              Une goutte, une averse, une pluie battante : vous choisissez
+              l'intensité. Des pendentifs de longueurs différentes conçus pour
+              être portés ensemble.
+            </p>
+            <ul class="coll__pieces">
+              <li>Organically Shaped Stone-Set Pendant Necklace</li>
+              <li>Organically Shaped Stone-Set Statement Pendant Necklace</li>
+              <li>Organically Shaped Heart Pendant Necklace</li>
+            </ul>
+          </div>
+        </article>
+
+        <article class="coll__row reveal">
+          <div>
+            <span class="coll__tag">#DisneyXPandora</span>
+            <h3 class="coll__name">Charms Disney &amp; diamants de synthèse</h3>
+          </div>
+          <div>
+            <p class="coll__desc">
+              Des personnages, un diamant de synthèse, un bracelet qui se
+              complète au fil du temps. La collaboration Disney × Pandora, pour
+              celles et ceux qui veulent une histoire précise au poignet.
+            </p>
+            <ul class="coll__pieces">
+              <li>Disney Princess Jasmine Rajah Lab-grown Diamond Charm</li>
+              <li>Disney Aladdin Princess Jasmine Ring</li>
+              <li>Disney Princesses Moana Heart of Te Fiti Dangle Charm</li>
+              <li>Disney Princesses Ariel Shell Lab-Grown Diamond Two-Tone Charm</li>
+            </ul>
+          </div>
+        </article>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- =============================== GALERIE =============================== -->
+  <section class="section" id="galerie">
+    <div class="wrap">
+      <div class="reveal">
+        <p class="eyebrow">Galerie</p>
+        <h2 class="h2">L'été en <span class="accent">reflets</span></h2>
+      </div>
+
+      <div class="g__grid">
+
+        <figure class="g__fig reveal">
+          <a class="g__link" href="https://www.instagram.com/theofficialpandora/" target="_blank" rel="noopener">
+            <img src="photos/insta-7.jpg" width="1080" height="1350" loading="lazy" decoding="async"
+                 alt="Bangle doré à la forme irrégulière, créoles et puces d'oreilles serties, posés sur un fond gris clair.">
+          </a>
+          <figcaption class="g__cap">Bangle et boucles serties — PANDORA ESSENCE</figcaption>
+        </figure>
+
+        <figure class="g__fig g__fig--offset reveal" data-d="1">
+          <a class="g__link" href="https://www.instagram.com/theofficialpandora/" target="_blank" rel="noopener">
+            <img src="photos/insta-8.jpg" width="1080" height="1350" loading="lazy" decoding="async"
+                 alt="Bracelet doré à maillons ovales ouverts, dont un renferme une perle blanche, photographié au-dessus d'une eau turquoise.">
+          </a>
+          <figcaption class="g__cap">Maillons ovales &amp; perle d'eau douce</figcaption>
+        </figure>
+
+        <figure class="g__fig reveal" data-d="2">
+          <a class="g__link" href="https://www.instagram.com/theofficialpandora/" target="_blank" rel="noopener">
+            <img src="photos/insta-11.jpg" width="1080" height="1350" loading="lazy" decoding="async"
+                 alt="Gros plan sur une oreille portant trois créoles dorées superposées, ciel d'été en arrière-plan.">
+          </a>
+          <figcaption class="g__cap">Empilement d'oreille, placage or 14 ct</figcaption>
+        </figure>
+
+        <figure class="g__fig g__fig--offset reveal">
+          <a class="g__link" href="https://www.instagram.com/theofficialpandora/" target="_blank" rel="noopener">
+            <img src="photos/insta-10.jpg" width="1080" height="1350" loading="lazy" decoding="async"
+                 alt="Deux puces d'oreilles dorées aux contours arrondis, pierres serties affleurantes, sur un marbre bleu.">
+          </a>
+          <figcaption class="g__cap">Puces serties, pierres affleurantes</figcaption>
+        </figure>
+
+        <figure class="g__fig reveal" data-d="1">
+          <a class="g__link" href="https://www.instagram.com/theofficialpandora/" target="_blank" rel="noopener">
+            <img src="photos/insta-2.jpg" width="1080" height="1339" loading="lazy" decoding="async"
+                 alt="Portrait : créole dorée, bagues à pierres bleues et collier multi-rangs doré de la collection Disney × Pandora.">
+          </a>
+          <figcaption class="g__cap">Bagues Jasmine &amp; collier multi-rangs</figcaption>
+        </figure>
+
+        <figure class="g__fig g__fig--offset reveal" data-d="2">
+          <a class="g__link" href="https://www.instagram.com/theofficialpandora/" target="_blank" rel="noopener">
+            <img src="photos/insta-4.jpg" width="1080" height="1339" loading="lazy" decoding="async"
+                 alt="Deux bracelets maille serpent en argent garnis de charms Disney : pantoufle de Cendrillon, rose, lampe, tigre et coquillage.">
+          </a>
+          <figcaption class="g__cap">Bracelets maille serpent &amp; charms Disney</figcaption>
+        </figure>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================== INSTAGRAM ============================== -->
+  <section class="section on-ink" id="instagram">
+    <div class="wrap">
+
+      <div class="ig__head">
+        <div class="reveal">
+          <p class="eyebrow">Instagram</p>
+
+          <div class="ig__id">
+            <img src="photos/insta-1.jpg" width="60" height="60" loading="lazy"
+                 alt="Photo de profil Instagram de Pandora : le logo de la marque.">
+            <div>
+              <p class="ig__handle">
+                @theofficialpandora
+                <!-- Badge « compte certifié » -->
+                <svg class="ig__badge" viewBox="0 0 24 24" fill="currentColor" role="img" aria-label="Compte certifié">
+                  <path d="M12 1.5l2.3 2.1 3.1-.4.9 3 2.8 1.4-1 3 1 3-2.8 1.4-.9 3-3.1-.4L12 22.5l-2.3-2.1-3.1.4-.9-3L2.9 16.4l1-3-1-3L5.7 9l.9-3 3.1.4L12 1.5zm-1.2 13.9l5.3-5.3-1.5-1.5-3.8 3.8-1.9-1.9-1.5 1.5 3.4 3.4z"/>
+                </svg>
+              </p>
+              <p class="ig__meta">
+                <span>11 736 970 abonnés</span>
+                <span>5 652 publications</span>
+                <span>Be Love #BeLove</span>
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div class="reveal" data-d="1">
+          <a class="btn btn--gold" href="https://www.instagram.com/theofficialpandora/" target="_blank" rel="noopener">
+            <svg class="btn__ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+              <rect x="3" y="3" width="18" height="18" rx="5"/>
+              <circle cx="12" cy="12" r="4"/>
+              <circle cx="17.2" cy="6.8" r="1.1" fill="currentColor" stroke="none"/>
+            </svg>
+            Suivre sur Instagram
+          </a>
+        </div>
+      </div>
+
+      <!-- Aperçu des publications : photos, nombres de mentions J'aime et
+           légendes réelles (en anglais, comme sur le compte).
+           Chaque carte renvoie au compte : remplacez le href par l'URL du post
+           si vous voulez pointer une publication précise. -->
+      <div class="ig__grid">
+
+        <a class="post reveal" href="https://www.instagram.com/theofficialpandora/" target="_blank" rel="noopener">
+          <div class="post__img">
+            <img src="photos/insta-3.jpg" width="1080" height="1339" loading="lazy" decoding="async"
+                 alt="Pendentif tête de tigre en or et argent tenant un diamant de synthèse, sur une soie turquoise.">
+            <span class="post__likes">
+              <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 21s-8-4.9-8-10.3A4.7 4.7 0 0 1 12 7a4.7 4.7 0 0 1 8 3.7C20 16.1 12 21 12 21z"/></svg>
+              9 161
+            </span>
+          </div>
+          <p class="post__txt"><span>Who says you can't be fierce and radiant? Our new charm, inspired by Disney Jasmine's pet tiger, features a brilliant lab-grown diamond held delicately in his mouth. 🐯</span></p>
+        </a>
+
+        <a class="post reveal" data-d="1" href="https://www.instagram.com/theofficialpandora/" target="_blank" rel="noopener">
+          <div class="post__img">
+            <img src="photos/insta-12.jpg" width="1080" height="1350" loading="lazy" decoding="async"
+                 alt="Une bague dorée et une bague argentée aux formes ondulantes, serties de pierres, posées sur une pierre claire.">
+            <span class="post__likes">
+              <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 21s-8-4.9-8-10.3A4.7 4.7 0 0 1 12 7a4.7 4.7 0 0 1 8 3.7C20 16.1 12 21 12 21z"/></svg>
+              11 955
+            </span>
+          </div>
+          <p class="post__txt"><span>Double up on summer shine. ✨ Like you, PANDORA ESSENCE is never just one thing. Mix and match for effortless contrast.</span></p>
+        </a>
+
+        <a class="post reveal" data-d="2" href="https://www.instagram.com/theofficialpandora/" target="_blank" rel="noopener">
+          <div class="post__img">
+            <img src="photos/insta-9.jpg" width="1080" height="1350" loading="lazy" decoding="async"
+                 alt="Trois bracelets dorés superposés sur un poignet, chacun ponctué d'un maillon ovale renfermant une perle.">
+            <span class="post__likes">
+              <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 21s-8-4.9-8-10.3A4.7 4.7 0 0 1 12 7a4.7 4.7 0 0 1 8 3.7C20 16.1 12 21 12 21z"/></svg>
+              10 513
+            </span>
+          </div>
+          <p class="post__txt"><span>Solo or layered, our new cultured pearl necklaces command presence. ⚪ ✨</span></p>
+        </a>
+
+        <a class="post reveal" data-d="3" href="https://www.instagram.com/theofficialpandora/" target="_blank" rel="noopener">
+          <div class="post__img">
+            <img src="photos/insta-6.jpg" width="1080" height="1350" loading="lazy" decoding="async"
+                 alt="Trois bagues chevalière dorées à plateau ovale bombé, semées de pierres serties, sur un fond gris.">
+            <span class="post__likes">
+              <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 21s-8-4.9-8-10.3A4.7 4.7 0 0 1 12 7a4.7 4.7 0 0 1 8 3.7C20 16.1 12 21 12 21z"/></svg>
+              5 190
+            </span>
+          </div>
+          <p class="post__txt"><span>Radiate your true essence in jewellery crafted to catch every droplet of light. 💧 ✨</span></p>
+        </a>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- =============================== CONTACT ===============================
+       Aucune adresse physique n'est connue : pas de carte, pas d'adresse
+       inventée. On propose les trois canaux réellement disponibles.
+  -->
+  <section class="section" id="contact">
+    <div class="wrap">
+      <div class="reveal">
+        <p class="eyebrow">Contact</p>
+        <h2 class="h2">Écrivez-nous, on <span class="accent">répond</span></h2>
+        <p class="lead" style="margin-top:1rem">
+          Une question sur une pièce, une taille, une disponibilité&nbsp;?
+          Le plus rapide reste le message privé sur Instagram.
+        </p>
+      </div>
+
+      <div class="ct__grid">
+
+        <!-- A REMPLACER : le numéro de téléphone.
+             Format du href : tel:+33XXXXXXXXX (indicatif pays, sans espaces) -->
+        <div class="ct__card reveal">
+          <span class="ct__ico">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+              <path d="M4 4h4l2 5-2.5 1.5a12 12 0 0 0 6 6L15 14l5 2v4a1 1 0 0 1-1 1A17 17 0 0 1 3 5a1 1 0 0 1 1-1z" stroke-linejoin="round"/>
+            </svg>
+          </span>
+          <span class="ct__k">Téléphone</span>
+          <a class="ct__v" href="tel:+33123456789">01 23 45 67 89</a>
+          <p class="ct__note">Appel direct depuis mobile.</p>
+        </div>
+
+        <!-- A REMPLACER : l'adresse e-mail -->
+        <div class="ct__card reveal" data-d="1">
+          <span class="ct__ico">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+              <rect x="3" y="5" width="18" height="14" rx="2"/>
+              <path d="M3.5 6.5 12 13l8.5-6.5"/>
+            </svg>
+          </span>
+          <span class="ct__k">E-mail</span>
+          <a class="ct__v" href="mailto:bonjour@exemple.fr?subject=Demande%20d%27information%20—%20Pandora">bonjour@exemple.fr</a>
+          <p class="ct__note">Réponse sous 48 h ouvrées.</p>
+        </div>
+
+        <!-- Message privé Instagram : lien profond, ouvre l'app sur mobile -->
+        <div class="ct__card reveal" data-d="2">
+          <span class="ct__ico">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+              <rect x="3" y="3" width="18" height="18" rx="5"/>
+              <circle cx="12" cy="12" r="4"/>
+              <circle cx="17.2" cy="6.8" r="1.1" fill="currentColor" stroke="none"/>
+            </svg>
+          </span>
+          <span class="ct__k">Message privé</span>
+          <a class="ct__v" href="https://ig.me/m/theofficialpandora" target="_blank" rel="noopener">@theofficialpandora</a>
+          <p class="ct__note">Ouvre directement la conversation Instagram.</p>
+        </div>
+
+      </div>
+
+      <p class="ct__legal">
+        Aucune boutique n'est rattachée à ce site : il présente la marque et
+        renvoie vers la <a href="https://to.pandora.net/jewellery" target="_blank" rel="noopener">boutique en ligne officielle</a>.
+      </p>
+    </div>
+  </section>
+
+</main>
+
+<!-- ============================= PIED DE PAGE ============================= -->
+<footer class="ft">
+  <div class="wrap">
+
+    <div class="ft__top">
+      <div>
+        <a class="logo" href="#top" aria-label="Pandora — retour en haut de page">
+          <img src="photos/insta-1.jpg" width="34" height="34" loading="lazy" alt="Logo Pandora">
+          <span class="logo__word">Pandora</span>
+        </a>
+        <p class="ft__tag">
+          Be&nbsp;Love. Des bijoux aux formes organiques, à choisir, mélanger et
+          porter tous les jours.
+        </p>
+
+        <div class="ft__soc">
+          <a href="https://www.instagram.com/theofficialpandora/" target="_blank" rel="noopener" aria-label="Pandora sur Instagram">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+              <rect x="3" y="3" width="18" height="18" rx="5"/>
+              <circle cx="12" cy="12" r="4"/>
+              <circle cx="17.2" cy="6.8" r="1.1" fill="currentColor" stroke="none"/>
+            </svg>
+          </a>
+          <a href="https://to.pandora.net/jewellery" target="_blank" rel="noopener" aria-label="Boutique en ligne Pandora">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+              <circle cx="12" cy="12" r="9"/>
+              <path d="M3 12h18M12 3c2.5 2.4 2.5 15.6 0 18M12 3c-2.5 2.4-2.5 15.6 0 18"/>
+            </svg>
+          </a>
+        </div>
+      </div>
+
+      <nav aria-label="Plan du site">
+        <h2 class="ft__h">Navigation</h2>
+        <ul class="ft__list">
+          <li><a href="#univers">L'univers</a></li>
+          <li><a href="#collections">Collections</a></li>
+          <li><a href="#galerie">Galerie</a></li>
+          <li><a href="#instagram">Instagram</a></li>
+          <li><a href="#contact">Contact</a></li>
+        </ul>
+      </nav>
+
+      <div>
+        <h2 class="ft__h">Informations</h2>
+        <!-- A REMPLACER : créer les pages mentions légales / confidentialité,
+             puis remplacer les « # » par leurs URL. -->
+        <ul class="ft__list">
+          <li><a href="#">Mentions légales</a></li>
+          <li><a href="#">Politique de confidentialité</a></li>
+          <li><a href="#">Cookies</a></li>
+          <li><a href="tel:+33123456789">01 23 45 67 89</a></li>
+          <li><a href="mailto:bonjour@exemple.fr">bonjour@exemple.fr</a></li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="ft__bot">
+      <p>© <span id="year">2026</span> Pandora. Tous droits réservés.</p>
+      <p>Photos et contenus issus du compte <a href="https://www.instagram.com/theofficialpandora/" target="_blank" rel="noopener">@theofficialpandora</a>. Certains visuels © Disney.</p>
+    </div>
+
+  </div>
+</footer>
+
+<script>
+/* ==========================================================================
+   JS — trois comportements, rien de plus
+   1. menu mobile   2. en-tête au défilement   3. apparition au scroll
+   ========================================================================== */
+(function () {
+  'use strict';
+
+  /* --- 1. Menu mobile ------------------------------------------------- */
+  var burger = document.getElementById('burger');
+  var nav = document.getElementById('nav');
+
+  function setMenu(open) {
+    nav.classList.toggle('is-open', open);
+    burger.setAttribute('aria-expanded', String(open));
+    burger.setAttribute('aria-label', open ? 'Fermer le menu' : 'Ouvrir le menu');
+  }
+
+  burger.addEventListener('click', function () {
+    setMenu(burger.getAttribute('aria-expanded') !== 'true');
+  });
+
+  // Refermer après un clic sur un lien, ou avec la touche Échap
+  nav.addEventListener('click', function (e) {
+    if (e.target.closest('a')) setMenu(false);
+  });
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape' && burger.getAttribute('aria-expanded') === 'true') {
+      setMenu(false);
+      burger.focus();
+    }
+  });
+
+  /* --- 2. En-tête : fond opaque dès qu'on défile ----------------------- */
+  var hd = document.getElementById('hd');
+  var onScroll = function () {
+    hd.classList.toggle('is-stuck', window.scrollY > 24);
+  };
+  onScroll();
+  window.addEventListener('scroll', onScroll, { passive: true });
+
+  /* --- 3. Apparition progressive des blocs ----------------------------- */
+  var items = document.querySelectorAll('.reveal');
+  var reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  if (reduced || !('IntersectionObserver' in window)) {
+    // Pas d'animation : tout est visible immédiatement
+    items.forEach(function (el) { el.classList.add('is-in'); });
+  } else {
+    var io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (entry) {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('is-in');
+          io.unobserve(entry.target); // une seule fois
+        }
+      });
+    }, { rootMargin: '0px 0px -8% 0px', threshold: 0.06 });
+
+    items.forEach(function (el) { io.observe(el); });
+  }
+
+  /* --- Année du copyright, mise à jour automatiquement ----------------- */
+  document.getElementById('year').textContent = new Date().getFullYear();
+})();
+</script>
+</body>
+</html>
